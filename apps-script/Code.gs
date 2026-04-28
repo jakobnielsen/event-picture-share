@@ -95,6 +95,9 @@ function doPost(e) {
   if (action === 'upload') {
     return handleUpload(body);
   }
+  if (action === 'createUploadSession') {
+    return handleCreateUploadSession(body);
+  }
   if (action === 'createEvent') {
     return handleCreateEvent(body);
   }
@@ -107,6 +110,7 @@ function doPost(e) {
 
 // ── Action: upload ────────────────────────────────────────────
 // Body: { action, token, filename, mimeType, data (base64) }
+// Legacy fallback — prefer createUploadSession for larger files.
 
 function handleUpload(body) {
   if (!body.token)    return error('Missing token');
@@ -130,6 +134,51 @@ function handleUpload(body) {
   } catch (err) {
     Logger.log('Upload error: ' + err.toString());
     return error('Upload failed: ' + err.message);
+  }
+}
+
+// ── Action: createUploadSession ───────────────────────────────
+// Body: { action, token, filename, mimeType }
+// Creates a Drive resumable upload session and returns the URL.
+// The browser then PUTs the raw file directly to Drive — no size limit,
+// no base64 overhead, real upload progress.
+
+function handleCreateUploadSession(body) {
+  if (!body.token)    return error('Missing token');
+  if (!body.filename) return error('Missing filename');
+  if (!body.mimeType) return error('Missing mimeType');
+
+  var ev = findEvent(body.token);
+  if (!ev) return error('Invalid token');
+
+  var safeName = body.filename.replace(/[^a-zA-Z0-9.\-_ ()]/g, '_');
+  if (safeName.length === 0) safeName = 'file';
+
+  var metadata = JSON.stringify({ name: safeName, parents: [ev.folderId] });
+
+  try {
+    var response = UrlFetchApp.fetch(
+      'https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable',
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer ' + ScriptApp.getOAuthToken(),
+          'Content-Type': 'application/json; charset=UTF-8',
+          'X-Upload-Content-Type': body.mimeType,
+        },
+        payload: metadata,
+        muteHttpExceptions: true,
+      }
+    );
+    var uploadUrl = response.getHeaders()['Location'];
+    if (!uploadUrl) {
+      Logger.log('createUploadSession: no Location header. Status: ' + response.getResponseCode());
+      return error('Could not create upload session');
+    }
+    return jsonResponse({ ok: true, uploadUrl: uploadUrl });
+  } catch (err) {
+    Logger.log('createUploadSession error: ' + err.toString());
+    return error('Could not create upload session: ' + err.message);
   }
 }
 

@@ -1,10 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import imageCompression from 'browser-image-compression'
-import { getEvent, uploadFile } from './api'
+import { getEvent, createUploadSession } from './api'
 
 const SMALL_FILE_BYTES = 1 * 1024 * 1024   // 1 MB — skip compression below this
 const LARGE_FILE_BYTES = 15 * 1024 * 1024  // 15 MB — warn user
-const VIDEO_MAX_BYTES  = 35 * 1024 * 1024  // 35 MB — Apps Script base64 POST limit
 const UPLOAD_CONCURRENCY = 5               // max parallel uploads
 
 interface CompressionResult {
@@ -25,19 +24,6 @@ async function compressIfNeeded(file: File): Promise<CompressionResult> {
     useWebWorker: false,  // avoid concurrent worker limits when compressing in parallel
   })
   return { file: compressed, compressed: true, wasLarge: isLarge }
-}
-
-function fileToBase64(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => {
-      // reader.result is "data:<mime>;base64,<data>" — strip the prefix
-      const result = reader.result as string
-      resolve(result.split(',')[1])
-    }
-    reader.onerror = reject
-    reader.readAsDataURL(file)
-  })
 }
 
 const STATUS = {
@@ -112,10 +98,6 @@ export default function UploadPage({ token }: UploadPageProps) {
     for (let i = 0; i < files.length; i++) {
       const entry = files[i]
       if (entry.raw.type.startsWith('video/')) {
-        if (entry.raw.size > VIDEO_MAX_BYTES) {
-          updateFile(i, { status: STATUS.ERROR, message: 'Video too large to upload (max 35 MB)' })
-          continue
-        }
         ready.push({ index: i, processedFile: entry.raw })
       } else {
         updateFile(i, { status: STATUS.COMPRESSING, message: 'Preparing…' })
@@ -131,37 +113,49 @@ export default function UploadPage({ token }: UploadPageProps) {
       }
     }
 
-    // Phase 2: upload compressed files in parallel (up to UPLOAD_CONCURRENCY)
+    // Phase 2: upload files directly to Drive via resumable session (parallel, real progress)
     const uploadOne = async ({ index: i, processedFile }: Ready) => {
       const entry = files[i]
+      updateFile(i, { status: STATUS.UPLOADING, progress: 5, message: 'Uploading…' })
 
-      updateFile(i, { status: STATUS.UPLOADING, progress: 15, message: 'Uploading…' })
-      let base64: string
+      // Ask Apps Script to create a Drive resumable upload session
+      let uploadUrl: string
       try {
-        base64 = await fileToBase64(processedFile)
+        const sessionRes = await createUploadSession(token, entry.name, processedFile.type)
+        if (!sessionRes.ok) {
+          updateFile(i, { status: STATUS.ERROR, progress: 0, message: sessionRes.error ?? 'Upload failed' })
+          return
+        }
+        uploadUrl = sessionRes.uploadUrl
       } catch {
-        updateFile(i, { status: STATUS.ERROR, message: 'Could not read file' })
+        updateFile(i, { status: STATUS.ERROR, progress: 0, message: 'Network error' })
         return
       }
 
-      updateFile(i, { progress: 20 })
-
-      try {
-        const res = await uploadFile(
-          token,
-          entry.name,
-          processedFile.type,
-          base64,
-          (pct) => updateFile(i, { progress: 20 + Math.round(pct * 0.8) }),
-        )
-        if (res.ok) {
-          updateFile(i, { status: STATUS.DONE, progress: 100, message: 'Uploaded!' })
-        } else {
-          updateFile(i, { status: STATUS.ERROR, progress: 0, message: res.error ?? 'Upload failed' })
+      // PUT the raw file directly to Drive — no base64, no size limit, real progress
+      await new Promise<void>((resolve) => {
+        const xhr = new XMLHttpRequest()
+        xhr.open('PUT', uploadUrl)
+        xhr.setRequestHeader('Content-Type', processedFile.type)
+        xhr.upload.onprogress = (e) => {
+          if (e.lengthComputable) {
+            updateFile(i, { progress: 5 + Math.round((e.loaded / e.total) * 95) })
+          }
         }
-      } catch {
-        updateFile(i, { status: STATUS.ERROR, progress: 0, message: 'Network error' })
-      }
+        xhr.onload = () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            updateFile(i, { status: STATUS.DONE, progress: 100, message: 'Uploaded!' })
+          } else {
+            updateFile(i, { status: STATUS.ERROR, progress: 0, message: 'Upload failed' })
+          }
+          resolve()
+        }
+        xhr.onerror = () => {
+          updateFile(i, { status: STATUS.ERROR, progress: 0, message: 'Network error' })
+          resolve()
+        }
+        xhr.send(processedFile)
+      })
     }
 
     const queue = [...ready]
@@ -234,7 +228,7 @@ export default function UploadPage({ token }: UploadPageProps) {
           <br />
           <span style={{ fontSize: 12, marginTop: 4, display: 'block' }}>or drag &amp; drop here</span>
           <span style={{ fontSize: 11, marginTop: 6, display: 'block', color: 'var(--text-muted)' }}>
-            Photos are compressed automatically · Videos up to 35 MB
+            Photos are compressed automatically · Videos supported
           </span>
           <input
             ref={inputRef}

@@ -17,6 +17,11 @@ export interface UploadResponse {
   ok: true
 }
 
+export interface CreateUploadSessionResponse {
+  ok: true
+  uploadUrl: string
+}
+
 export interface EventRecord {
   name: string
   token: string
@@ -61,7 +66,7 @@ export async function getEvent(token: string): Promise<ApiResponse<GetEventRespo
   return res.json() as Promise<ApiResponse<GetEventResponse>>
 }
 
-/** POST action:upload — saves a base64-encoded image to the event's Drive folder. */
+/** POST action:upload — legacy base64 upload, kept for reference. */
 export async function uploadFile(
   token: string,
   filename: string,
@@ -76,14 +81,12 @@ export async function uploadFile(
     onProgress(0)
     const tick = () => {
       if (!ticking) return
-      // Approach 95% asymptotically so it never falsely completes
       fake = fake + (95 - fake) * 0.07
       onProgress(Math.round(fake))
       setTimeout(tick, 300)
     }
     setTimeout(tick, 300)
   }
-
   try {
     const res = await fetch(BASE_URL, {
       method: 'POST',
@@ -95,6 +98,16 @@ export async function uploadFile(
   } finally {
     ticking = false
   }
+}
+
+/** POST action:createUploadSession — returns a Drive resumable upload URL.
+ *  The browser then PUTs the raw file directly to Drive (no size limit, real progress). */
+export async function createUploadSession(
+  token: string,
+  filename: string,
+  mimeType: string,
+): Promise<ApiResponse<CreateUploadSessionResponse>> {
+  return postJson<CreateUploadSessionResponse>({ action: 'createUploadSession', token, filename, mimeType })
 }
 
 /** POST action:createEvent — creates a Drive subfolder and returns a new token */
