@@ -21,7 +21,7 @@ async function compressIfNeeded(file: File): Promise<CompressionResult> {
     alwaysKeepResolution: true,   // quality-reduction only, never resize
     initialQuality: 1,
     preserveExif: true,
-    useWebWorker: true,
+    useWebWorker: false,  // avoid concurrent worker limits when compressing in parallel
   })
   return { file: compressed, compressed: true, wasLarge: isLarge }
 }
