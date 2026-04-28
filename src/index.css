@@ -1,0 +1,325 @@
+/* ── Reset & base ───────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+
+:root {
+  --blue: #1a73e8;
+  --blue-dark: #1558b0;
+  --blue-light: #e8f0fe;
+  --green: #188038;
+  --green-light: #e6f4ea;
+  --red: #d93025;
+  --red-light: #fce8e6;
+  --yellow: #f29900;
+  --yellow-light: #fef7e0;
+  --text: #202124;
+  --text-muted: #5f6368;
+  --bg: #ffffff;
+  --bg-surface: #f8f9fa;
+  --border: #dadce0;
+  --radius: 8px;
+  --font: 'Google Sans', system-ui, -apple-system, sans-serif;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--font);
+  font-size: 16px;
+  color: var(--text);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+#root {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Layout ─────────────────────────────────────────────────── */
+.page {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24px 16px 48px;
+  max-width: 540px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.page-header {
+  width: 100%;
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.page-header h1 {
+  font-size: 22px;
+  font-weight: 500;
+  margin: 0 0 4px;
+  color: var(--text);
+}
+
+.page-header p {
+  font-size: 14px;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+/* ── Card ───────────────────────────────────────────────────── */
+.card {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+  width: 100%;
+}
+
+/* ── Buttons ────────────────────────────────────────────────── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border-radius: var(--radius);
+  font-size: 14px;
+  font-weight: 500;
+  font-family: var(--font);
+  cursor: pointer;
+  border: none;
+  transition: background 0.15s, box-shadow 0.15s;
+  text-decoration: none;
+}
+
+.btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: var(--blue);
+  color: #fff;
+}
+.btn-primary:not(:disabled):hover { background: var(--blue-dark); }
+
+.btn-secondary {
+  background: var(--bg-surface);
+  color: var(--blue);
+  border: 1px solid var(--border);
+}
+.btn-secondary:not(:disabled):hover { background: var(--blue-light); }
+
+.btn-danger {
+  background: var(--red);
+  color: #fff;
+}
+
+.btn-full { width: 100%; }
+
+/* ── Form elements ──────────────────────────────────────────── */
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.form-group label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.form-group input {
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 15px;
+  font-family: var(--font);
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.form-group input:focus {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px var(--blue-light);
+}
+
+/* ── Alerts ─────────────────────────────────────────────────── */
+.alert {
+  padding: 12px 16px;
+  border-radius: var(--radius);
+  font-size: 14px;
+  margin-bottom: 16px;
+  line-height: 1.5;
+}
+.alert-error   { background: var(--red-light);    color: var(--red); }
+.alert-success { background: var(--green-light);  color: var(--green); }
+.alert-warn    { background: var(--yellow-light);  color: var(--yellow); }
+.alert-info    { background: var(--blue-light);   color: var(--blue-dark); }
+
+/* ── Progress bar ───────────────────────────────────────────── */
+.progress-wrap {
+  width: 100%;
+  background: var(--border);
+  border-radius: 4px;
+  height: 6px;
+  overflow: hidden;
+  margin: 6px 0;
+}
+.progress-bar {
+  height: 100%;
+  background: var(--blue);
+  border-radius: 4px;
+  transition: width 0.2s ease;
+}
+
+/* ── File list ──────────────────────────────────────────────── */
+.file-list {
+  list-style: none;
+  margin: 16px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+.file-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px;
+  background: var(--bg-surface);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+}
+
+.file-item-name {
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.file-item-status {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.file-item.done .file-item-status   { color: var(--green); }
+.file-item.error .file-item-status  { color: var(--red); }
+
+/* ── Upload drop zone ───────────────────────────────────────── */
+.drop-zone {
+  border: 2px dashed var(--border);
+  border-radius: var(--radius);
+  padding: 32px 16px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  color: var(--text-muted);
+  font-size: 14px;
+  position: relative;
+}
+
+.drop-zone:hover,
+.drop-zone.drag-over {
+  border-color: var(--blue);
+  background: var(--blue-light);
+  color: var(--blue);
+}
+
+.drop-zone input[type=file] {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+  width: 100%;
+  height: 100%;
+}
+
+.drop-zone-icon {
+  font-size: 40px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+/* ── Admin ──────────────────────────────────────────────────── */
+.events-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  margin-top: 16px;
+}
+
+.event-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  background: var(--bg);
+}
+
+.event-card h3 {
+  margin: 0 0 4px;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.event-card-meta {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+}
+
+.event-card-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.qr-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 12px;
+  background: var(--bg-surface);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+}
+
+.qr-wrap canvas {
+  border-radius: 4px;
+}
+
+/* ── Landing ────────────────────────────────────────────────── */
+.landing-icon {
+  font-size: 72px;
+  margin: 24px 0 16px;
+}
+
+/* ── Spinner ────────────────────────────────────────────────── */
+.spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--border);
+  border-top-color: var(--blue);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  margin: 24px auto;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Divider ────────────────────────────────────────────────── */
+.divider {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 20px 0;
+}
