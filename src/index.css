@@ -20,6 +20,24 @@
   --font: 'Google Sans', system-ui, -apple-system, sans-serif;
 }
 
+/* ── Dark mode ──────────────────────────────────────────────── */
+[data-theme='dark'] {
+  --blue: #8ab4f8;
+  --blue-dark: #aecbfa;
+  --blue-light: #1a2b4a;
+  --green: #81c995;
+  --green-light: #1a2e20;
+  --red: #f28b82;
+  --red-light: #3b1f1d;
+  --yellow: #fdd663;
+  --yellow-light: #3b2e10;
+  --text: #e8eaed;
+  --text-muted: #9aa0a6;
+  --bg: #202124;
+  --bg-surface: #292a2d;
+  --border: #3c4043;
+}
+
 html, body {
   margin: 0;
   padding: 0;
@@ -323,3 +341,29 @@ html, body {
   border-top: 1px solid var(--border);
   margin: 20px 0;
 }
+
+/* ── Top bar ────────────────────────────────────────────────── */
+.top-bar {
+  position: fixed;
+  top: 0;
+  right: 0;
+  padding: 10px 16px;
+  z-index: 100;
+}
+
+.theme-toggle {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 6px 12px;
+  font-size: 16px;
+  cursor: pointer;
+  color: var(--text);
+  line-height: 1;
+  transition: background 0.15s;
+}
+
+.theme-toggle:hover { background: var(--border); }
+
+/* Push page content below fixed top bar */
+.page { padding-top: 52px; }

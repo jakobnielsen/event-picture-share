@@ -4,6 +4,7 @@ import { getEvent, uploadFile } from './api'
 
 const SMALL_FILE_BYTES = 5 * 1024 * 1024   // 5 MB — skip compression
 const LARGE_FILE_BYTES = 15 * 1024 * 1024  // 15 MB — warn user
+const UPLOAD_CONCURRENCY = 3               // max parallel uploads
 
 interface CompressionResult {
   file: File
@@ -16,7 +17,7 @@ async function compressIfNeeded(file: File): Promise<CompressionResult> {
 
   const isLarge = file.size > LARGE_FILE_BYTES
   const compressed = await imageCompression(file, {
-    maxSizeMB: isLarge ? 8 : 5,
+    maxSizeMB: isLarge ? 8 : 6,  // 6 MB target ≈ Google Photos quality, 8 MB for very large
     alwaysKeepResolution: true,   // quality-reduction only, never resize
     initialQuality: 1,
     preserveExif: true,
@@ -104,7 +105,7 @@ export default function UploadPage({ token }: UploadPageProps) {
     setUploading(true)
     setAllDone(false)
 
-    for (let i = 0; i < files.length; i++) {
+    const processOne = async (i: number) => {
       const entry = files[i]
 
       // Compress
@@ -118,7 +119,7 @@ export default function UploadPage({ token }: UploadPageProps) {
         }
       } catch {
         updateFile(i, { status: STATUS.ERROR, message: 'Compression failed' })
-        continue
+        return
       }
 
       // Convert to base64
@@ -128,7 +129,7 @@ export default function UploadPage({ token }: UploadPageProps) {
         base64 = await fileToBase64(processedFile)
       } catch {
         updateFile(i, { status: STATUS.ERROR, message: 'Could not read file' })
-        continue
+        return
       }
 
       updateFile(i, { progress: 50 })
@@ -145,6 +146,16 @@ export default function UploadPage({ token }: UploadPageProps) {
         updateFile(i, { status: STATUS.ERROR, progress: 0, message: 'Network error' })
       }
     }
+
+    // Run up to UPLOAD_CONCURRENCY tasks in parallel
+    const indices = files.map((_, i) => i)
+    const pool = Array.from({ length: UPLOAD_CONCURRENCY }, async () => {
+      while (indices.length > 0) {
+        const i = indices.shift()!
+        await processOne(i)
+      }
+    })
+    await Promise.all(pool)
 
     setUploading(false)
     setAllDone(true)

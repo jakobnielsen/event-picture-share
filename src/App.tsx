@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import UploadPage from './UploadPage'
 import AdminPage from './AdminPage'
 import LandingPage from './LandingPage'
+import ThemeToggle from './ThemeToggle'
 
 export default function App() {
   const { page, token } = useMemo(() => {
@@ -12,7 +13,12 @@ export default function App() {
     return { page: 'landing' as const, token: null }
   }, [])
 
-  if (page === 'upload' && token) return <UploadPage token={token} />
-  if (page === 'admin') return <AdminPage />
-  return <LandingPage />
+  return (
+    <>
+      <ThemeToggle />
+      {page === 'upload' && token ? <UploadPage token={token} /> :
+       page === 'admin' ? <AdminPage /> :
+       <LandingPage />}
+    </>
+  )
 }
