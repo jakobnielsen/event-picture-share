@@ -61,32 +61,40 @@ export async function getEvent(token: string): Promise<ApiResponse<GetEventRespo
   return res.json() as Promise<ApiResponse<GetEventResponse>>
 }
 
-/** POST action:upload — saves a base64-encoded image to the event's Drive folder.
- *  Uses XHR so callers can receive real upload-progress events (0–100). */
-export function uploadFile(
+/** POST action:upload — saves a base64-encoded image to the event's Drive folder. */
+export async function uploadFile(
   token: string,
   filename: string,
   mimeType: string,
   base64Data: string,
   onProgress?: (percent: number) => void,
 ): Promise<ApiResponse<UploadResponse>> {
-  return new Promise((resolve, reject) => {
-    const xhr = new XMLHttpRequest()
-    xhr.open('POST', BASE_URL)
-    xhr.setRequestHeader('Content-Type', 'text/plain')
-    xhr.responseType = 'json'
-
-    if (onProgress) {
-      xhr.upload.onprogress = (e) => {
-        if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100))
-      }
+  // fetch doesn't expose upload progress, so we animate a ticker while waiting
+  let ticking = true
+  let fake = 0
+  if (onProgress) {
+    onProgress(0)
+    const tick = () => {
+      if (!ticking) return
+      // Approach 95% asymptotically so it never falsely completes
+      fake = fake + (95 - fake) * 0.07
+      onProgress(Math.round(fake))
+      setTimeout(tick, 300)
     }
+    setTimeout(tick, 300)
+  }
 
-    xhr.onload = () => resolve(xhr.response as ApiResponse<UploadResponse>)
-    xhr.onerror = () => reject(new Error('Network error'))
-
-    xhr.send(JSON.stringify({ action: 'upload', token, filename, mimeType, data: base64Data }))
-  })
+  try {
+    const res = await fetch(BASE_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ action: 'upload', token, filename, mimeType, data: base64Data }),
+      redirect: 'follow',
+    })
+    return res.json() as Promise<ApiResponse<UploadResponse>>
+  } finally {
+    ticking = false
+  }
 }
 
 /** POST action:createEvent — creates a Drive subfolder and returns a new token */
