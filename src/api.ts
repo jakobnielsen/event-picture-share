@@ -61,14 +61,32 @@ export async function getEvent(token: string): Promise<ApiResponse<GetEventRespo
   return res.json() as Promise<ApiResponse<GetEventResponse>>
 }
 
-/** POST action:upload — saves a base64-encoded image to the event's Drive folder */
-export async function uploadFile(
+/** POST action:upload — saves a base64-encoded image to the event's Drive folder.
+ *  Uses XHR so callers can receive real upload-progress events (0–100). */
+export function uploadFile(
   token: string,
   filename: string,
   mimeType: string,
   base64Data: string,
+  onProgress?: (percent: number) => void,
 ): Promise<ApiResponse<UploadResponse>> {
-  return postJson<UploadResponse>({ action: 'upload', token, filename, mimeType, data: base64Data })
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest()
+    xhr.open('POST', BASE_URL)
+    xhr.setRequestHeader('Content-Type', 'text/plain')
+    xhr.responseType = 'json'
+
+    if (onProgress) {
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100))
+      }
+    }
+
+    xhr.onload = () => resolve(xhr.response as ApiResponse<UploadResponse>)
+    xhr.onerror = () => reject(new Error('Network error'))
+
+    xhr.send(JSON.stringify({ action: 'upload', token, filename, mimeType, data: base64Data }))
+  })
 }
 
 /** POST action:createEvent — creates a Drive subfolder and returns a new token */

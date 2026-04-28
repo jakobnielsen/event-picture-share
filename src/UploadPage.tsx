@@ -2,9 +2,9 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import imageCompression from 'browser-image-compression'
 import { getEvent, uploadFile } from './api'
 
-const SMALL_FILE_BYTES = 5 * 1024 * 1024   // 5 MB — skip compression
+const SMALL_FILE_BYTES = 1 * 1024 * 1024   // 1 MB — skip compression below this
 const LARGE_FILE_BYTES = 15 * 1024 * 1024  // 15 MB — warn user
-const UPLOAD_CONCURRENCY = 3               // max parallel uploads
+const UPLOAD_CONCURRENCY = 5               // max parallel uploads
 
 interface CompressionResult {
   file: File
@@ -17,7 +17,7 @@ async function compressIfNeeded(file: File): Promise<CompressionResult> {
 
   const isLarge = file.size > LARGE_FILE_BYTES
   const compressed = await imageCompression(file, {
-    maxSizeMB: isLarge ? 8 : 6,  // 6 MB target ≈ Google Photos quality, 8 MB for very large
+    maxSizeMB: isLarge ? 6 : 2,  // 2 MB target for normal, 6 MB for very large
     alwaysKeepResolution: true,   // quality-reduction only, never resize
     initialQuality: 1,
     preserveExif: true,
@@ -123,7 +123,7 @@ export default function UploadPage({ token }: UploadPageProps) {
       }
 
       // Convert to base64
-      updateFile(i, { status: STATUS.UPLOADING, progress: 10, message: 'Uploading…' })
+      updateFile(i, { status: STATUS.UPLOADING, progress: 15, message: 'Uploading…' })
       let base64: string
       try {
         base64 = await fileToBase64(processedFile)
@@ -132,11 +132,17 @@ export default function UploadPage({ token }: UploadPageProps) {
         return
       }
 
-      updateFile(i, { progress: 50 })
+      updateFile(i, { progress: 20 })
 
-      // Upload
+      // Upload with real XHR progress
       try {
-        const res = await uploadFile(token, entry.name, processedFile.type, base64)
+        const res = await uploadFile(
+          token,
+          entry.name,
+          processedFile.type,
+          base64,
+          (pct) => updateFile(i, { progress: 20 + Math.round(pct * 0.8) }),
+        )
         if (res.ok) {
           updateFile(i, { status: STATUS.DONE, progress: 100, message: 'Uploaded!' })
         } else {
