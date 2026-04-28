@@ -105,24 +105,26 @@ export default function UploadPage({ token }: UploadPageProps) {
     setUploading(true)
     setAllDone(false)
 
-    const processOne = async (i: number) => {
-      const entry = files[i]
-
-      // Compress
+    // Phase 1: compress serially — concurrent canvas operations lock up in browsers
+    type Ready = { index: number; processedFile: File }
+    const ready: Ready[] = []
+    for (let i = 0; i < files.length; i++) {
       updateFile(i, { status: STATUS.COMPRESSING, message: 'Preparing…' })
-      let processedFile: File
       try {
-        const result = await compressIfNeeded(entry.raw)
-        processedFile = result.file
+        const result = await compressIfNeeded(files[i].raw)
         if (result.wasLarge) {
           updateFile(i, { wasLarge: true, message: 'Large file — quality preserved as much as possible' })
         }
+        ready.push({ index: i, processedFile: result.file })
       } catch {
         updateFile(i, { status: STATUS.ERROR, message: 'Compression failed' })
-        return
       }
+    }
 
-      // Convert to base64
+    // Phase 2: upload compressed files in parallel (up to UPLOAD_CONCURRENCY)
+    const uploadOne = async ({ index: i, processedFile }: Ready) => {
+      const entry = files[i]
+
       updateFile(i, { status: STATUS.UPLOADING, progress: 15, message: 'Uploading…' })
       let base64: string
       try {
@@ -134,7 +136,6 @@ export default function UploadPage({ token }: UploadPageProps) {
 
       updateFile(i, { progress: 20 })
 
-      // Upload with real XHR progress
       try {
         const res = await uploadFile(
           token,
@@ -153,12 +154,10 @@ export default function UploadPage({ token }: UploadPageProps) {
       }
     }
 
-    // Run up to UPLOAD_CONCURRENCY tasks in parallel
-    const indices = files.map((_, i) => i)
-    const pool = Array.from({ length: UPLOAD_CONCURRENCY }, async () => {
-      while (indices.length > 0) {
-        const i = indices.shift()!
-        await processOne(i)
+    const queue = [...ready]
+    const pool = Array.from({ length: Math.min(UPLOAD_CONCURRENCY, queue.length) }, async () => {
+      while (queue.length > 0) {
+        await uploadOne(queue.shift()!)
       }
     })
     await Promise.all(pool)
