@@ -113,33 +113,63 @@ export default function UploadPage({ token }: UploadPageProps) {
       }
     }
 
-    // Phase 2: upload files directly to Drive via resumable session (parallel, real progress)
+    // Phase 2: upload files directly to Drive via browser-initiated resumable session (parallel)
     const uploadOne = async ({ index: i, processedFile }: Ready) => {
       const entry = files[i]
       updateFile(i, { status: STATUS.UPLOADING, progress: 5, message: 'Uploading…' })
 
-      // Ask Apps Script to create a Drive resumable upload session
-      let uploadUrl: string
+      // Ask Apps Script for a token + folder to initiate the Drive session from the browser.
+      // Browser-initiated sessions include the Origin header, which makes Drive include
+      // Access-Control-Allow-Origin on responses — required for CORS to work.
+      let sessionRes: Awaited<ReturnType<typeof createUploadSession>>
       try {
-        const sessionRes = await createUploadSession(token, entry.name, processedFile.type)
+        sessionRes = await createUploadSession(token, entry.name, processedFile.type)
         if (!sessionRes.ok) {
           updateFile(i, { status: STATUS.ERROR, progress: 0, message: sessionRes.error ?? 'Upload failed' })
           return
         }
-        uploadUrl = sessionRes.uploadUrl
       } catch {
         updateFile(i, { status: STATUS.ERROR, progress: 0, message: 'Network error' })
         return
       }
 
-      // PUT the raw file directly to Drive — no base64, no size limit, real progress
+      // Initiate the Drive resumable upload session directly from the browser.
+      // The browser automatically includes Origin, so Drive sets up CORS for this session.
+      let uploadUrl: string
+      try {
+        const initRes = await fetch(
+          'https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable',
+          {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${sessionRes.uploadToken}`,
+              'Content-Type': 'application/json',
+              'X-Upload-Content-Type': processedFile.type,
+            },
+            body: JSON.stringify({ name: sessionRes.safeName, parents: [sessionRes.folderId] }),
+          },
+        )
+        const location = initRes.headers.get('Location')
+        if (!initRes.ok || !location) {
+          updateFile(i, { status: STATUS.ERROR, progress: 0, message: 'Upload failed' })
+          return
+        }
+        uploadUrl = location
+      } catch {
+        updateFile(i, { status: STATUS.ERROR, progress: 0, message: 'Network error' })
+        return
+      }
+
+      updateFile(i, { progress: 10 })
+
+      // PUT the raw file to Drive — no size limit, real upload progress via XHR
       await new Promise<void>((resolve) => {
         const xhr = new XMLHttpRequest()
         xhr.open('PUT', uploadUrl)
         xhr.setRequestHeader('Content-Type', processedFile.type)
         xhr.upload.onprogress = (e) => {
           if (e.lengthComputable) {
-            updateFile(i, { progress: 5 + Math.round((e.loaded / e.total) * 95) })
+            updateFile(i, { progress: 10 + Math.round((e.loaded / e.total) * 90) })
           }
         }
         xhr.onload = () => {

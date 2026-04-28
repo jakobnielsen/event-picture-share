@@ -139,9 +139,11 @@ function handleUpload(body) {
 
 // ── Action: createUploadSession ───────────────────────────────
 // Body: { action, token, filename, mimeType }
-// Creates a Drive resumable upload session and returns the URL.
-// The browser then PUTs the raw file directly to Drive — no size limit,
-// no base64 overhead, real upload progress.
+// Returns a short-lived OAuth token + folderId so the BROWSER can initiate
+// the Drive resumable session itself. Browser-initiated sessions are required
+// for CORS to work on the subsequent PUT: the browser's Origin header causes
+// Drive to include Access-Control-Allow-Origin on the session responses.
+// Token has full drive scope but expires in ~1 hour.
 
 function handleCreateUploadSession(body) {
   if (!body.token)    return error('Missing token');
@@ -154,32 +156,12 @@ function handleCreateUploadSession(body) {
   var safeName = body.filename.replace(/[^a-zA-Z0-9.\-_ ()]/g, '_');
   if (safeName.length === 0) safeName = 'file';
 
-  var metadata = JSON.stringify({ name: safeName, parents: [ev.folderId] });
-
-  try {
-    var response = UrlFetchApp.fetch(
-      'https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable',
-      {
-        method: 'POST',
-        headers: {
-          'Authorization': 'Bearer ' + ScriptApp.getOAuthToken(),
-          'Content-Type': 'application/json; charset=UTF-8',
-          'X-Upload-Content-Type': body.mimeType,
-        },
-        payload: metadata,
-        muteHttpExceptions: true,
-      }
-    );
-    var uploadUrl = response.getHeaders()['Location'];
-    if (!uploadUrl) {
-      Logger.log('createUploadSession: no Location header. Status: ' + response.getResponseCode());
-      return error('Could not create upload session');
-    }
-    return jsonResponse({ ok: true, uploadUrl: uploadUrl });
-  } catch (err) {
-    Logger.log('createUploadSession error: ' + err.toString());
-    return error('Could not create upload session: ' + err.message);
-  }
+  return jsonResponse({
+    ok: true,
+    uploadToken: ScriptApp.getOAuthToken(),
+    folderId: ev.folderId,
+    safeName: safeName,
+  });
 }
 
 // ── Action: createEvent ───────────────────────────────────────

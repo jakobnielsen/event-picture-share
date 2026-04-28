@@ -19,7 +19,9 @@ export interface UploadResponse {
 
 export interface CreateUploadSessionResponse {
   ok: true
-  uploadUrl: string
+  uploadToken: string
+  folderId: string
+  safeName: string
 }
 
 export interface EventRecord {
