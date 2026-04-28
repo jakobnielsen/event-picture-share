@@ -4,6 +4,7 @@ import { getEvent, uploadFile } from './api'
 
 const SMALL_FILE_BYTES = 1 * 1024 * 1024   // 1 MB — skip compression below this
 const LARGE_FILE_BYTES = 15 * 1024 * 1024  // 15 MB — warn user
+const VIDEO_MAX_BYTES  = 35 * 1024 * 1024  // 35 MB — Apps Script base64 POST limit
 const UPLOAD_CONCURRENCY = 5               // max parallel uploads
 
 interface CompressionResult {
@@ -87,7 +88,7 @@ export default function UploadPage({ token }: UploadPageProps) {
 
   const handleFiles = useCallback((selected: FileList | null) => {
     if (!selected) return
-    const arr = Array.from(selected).filter(f => f.type.startsWith('image/'))
+    const arr = Array.from(selected).filter(f => f.type.startsWith('image/') || f.type.startsWith('video/'))
     if (!arr.length) return
     setAllDone(false)
     setFiles(arr.map(f => ({
@@ -105,19 +106,28 @@ export default function UploadPage({ token }: UploadPageProps) {
     setUploading(true)
     setAllDone(false)
 
-    // Phase 1: compress serially — concurrent canvas operations lock up in browsers
+    // Phase 1: compress images serially (concurrent canvas operations lock up browsers); videos skip compression
     type Ready = { index: number; processedFile: File }
     const ready: Ready[] = []
     for (let i = 0; i < files.length; i++) {
-      updateFile(i, { status: STATUS.COMPRESSING, message: 'Preparing…' })
-      try {
-        const result = await compressIfNeeded(files[i].raw)
-        if (result.wasLarge) {
-          updateFile(i, { wasLarge: true, message: 'Large file — quality preserved as much as possible' })
+      const entry = files[i]
+      if (entry.raw.type.startsWith('video/')) {
+        if (entry.raw.size > VIDEO_MAX_BYTES) {
+          updateFile(i, { status: STATUS.ERROR, message: 'Video too large to upload (max 35 MB)' })
+          continue
         }
-        ready.push({ index: i, processedFile: result.file })
-      } catch {
-        updateFile(i, { status: STATUS.ERROR, message: 'Compression failed' })
+        ready.push({ index: i, processedFile: entry.raw })
+      } else {
+        updateFile(i, { status: STATUS.COMPRESSING, message: 'Preparing…' })
+        try {
+          const result = await compressIfNeeded(entry.raw)
+          if (result.wasLarge) {
+            updateFile(i, { wasLarge: true, message: 'Large file — quality preserved as much as possible' })
+          }
+          ready.push({ index: i, processedFile: result.file })
+        } catch {
+          updateFile(i, { status: STATUS.ERROR, message: 'Compression failed' })
+        }
       }
     }
 
@@ -199,12 +209,12 @@ export default function UploadPage({ token }: UploadPageProps) {
     <main className="page">
       <div className="page-header">
         <h1>📷 {eventName}</h1>
-        <p>Upload your photos from the event</p>
+        <p>Upload your photos and videos from the event</p>
       </div>
 
       {allDone && files.every(f => f.status === STATUS.DONE) && (
         <div className="alert alert-success">
-          All photos uploaded successfully! Thank you 🎉
+          All files uploaded successfully! Thank you 🎉
         </div>
       )}
 
@@ -213,23 +223,26 @@ export default function UploadPage({ token }: UploadPageProps) {
           className={`drop-zone${dragOver ? ' drag-over' : ''}`}
           role="button"
           tabIndex={0}
-          aria-label="Select photos to upload"
+          aria-label="Select photos or videos to upload"
           onDragOver={e => { e.preventDefault(); setDragOver(true) }}
           onDragLeave={() => setDragOver(false)}
           onDrop={e => { e.preventDefault(); setDragOver(false); handleFiles(e.dataTransfer.files) }}
           onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') inputRef.current?.click() }}
         >
           <span className="drop-zone-icon">🖼️</span>
-          <strong>Tap to select photos</strong>
+          <strong>Tap to select photos or videos</strong>
           <br />
           <span style={{ fontSize: 12, marginTop: 4, display: 'block' }}>or drag &amp; drop here</span>
+          <span style={{ fontSize: 11, marginTop: 6, display: 'block', color: 'var(--text-muted)' }}>
+            Photos are compressed automatically · Videos up to 35 MB
+          </span>
           <input
             ref={inputRef}
             type="file"
-            accept="image/*"
+            accept="image/*,video/*"
             multiple
             onChange={e => handleFiles(e.target.files)}
-            aria-label="Select photos"
+            aria-label="Select photos or videos"
           />
         </div>
       )}
@@ -271,7 +284,7 @@ export default function UploadPage({ token }: UploadPageProps) {
                 onClick={startUpload}
                 disabled={uploading || files.every(f => f.status === STATUS.DONE)}
               >
-                {uploading ? 'Uploading…' : `Upload ${files.length} photo${files.length === 1 ? '' : 's'}`}
+                {uploading ? 'Uploading…' : `Upload ${files.length} file${files.length === 1 ? '' : 's'}`}
               </button>
             )}
             {(allDone || !uploading) && (
