@@ -24,7 +24,7 @@ const en = {
   // UploadPage — dynamic
   status_ready: (mb: string) => `Ready — ${mb} MB`,
   btn_upload: (n: number) => `Upload ${n} file${n === 1 ? '' : 's'}`,
-
+  file_summary: (n: number, size: string) => `${n} ${n === 1 ? 'file' : 'files'} · ${size} total`,
   // UploadPage — per-file status labels
   status_preparing: 'Preparing…',
   status_uploading: 'Uploading…',
@@ -85,7 +85,7 @@ const da: typeof en = {
 
   status_ready: (mb: string) => `Klar — ${mb} MB`,
   btn_upload: (n: number) => `Upload ${n} fil${n === 1 ? '' : 'er'}`,
-
+  file_summary: (n: number, size: string) => `${n} ${n === 1 ? 'fil' : 'filer'} · ${size} i alt`,
   status_preparing: 'Forbereder…',
   status_uploading: 'Uploader…',
   status_done: '✓ Uploadet',

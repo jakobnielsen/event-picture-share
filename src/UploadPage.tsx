@@ -319,22 +319,33 @@ export default function UploadPage({ token }: UploadPageProps) {
           <div style={{
             position: 'sticky', top: 52, zIndex: 10,
             background: 'var(--bg)', paddingBottom: 8, paddingTop: 12,
-            display: 'flex', gap: 10, width: '100%',
+            display: 'flex', flexDirection: 'column', gap: 8, width: '100%',
           }}>
-            {!allDone && (
-              <button
-                className="btn btn-primary btn-full"
-                onClick={startUpload}
-                disabled={uploading || files.every(f => f.status === STATUS.DONE)}
-              >
-                {uploading ? t.btn_uploading : t.btn_upload(files.length)}
-              </button>
-            )}
-            {(allDone || !uploading) && (
-              <button className="btn btn-secondary" onClick={reset} disabled={uploading}>
-                {t.btn_clear}
-              </button>
-            )}
+            <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+              {(() => {
+                const bytes = files.reduce((sum, f) => sum + f.size, 0)
+                const size = bytes >= 1024 * 1024 * 1024
+                  ? `${(bytes / 1024 / 1024 / 1024).toFixed(2)} GB`
+                  : `${(bytes / 1024 / 1024).toFixed(1)} MB`
+                return t.file_summary(files.length, size)
+              })()}
+            </div>
+            <div style={{ display: 'flex', gap: 10 }}>
+              {!allDone && (
+                <button
+                  className="btn btn-primary btn-full"
+                  onClick={startUpload}
+                  disabled={uploading || files.every(f => f.status === STATUS.DONE)}
+                >
+                  {uploading ? t.btn_uploading : t.btn_upload(files.length)}
+                </button>
+              )}
+              {(allDone || !uploading) && (
+                <button className="btn btn-secondary" onClick={reset} disabled={uploading}>
+                  {t.btn_clear}
+                </button>
+              )}
+            </div>
           </div>
 
           <ul className="file-list">
