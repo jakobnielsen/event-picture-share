@@ -285,7 +285,7 @@ export default function UploadPage({ token }: UploadPageProps) {
         </div>
       )}
 
-      {!allDone && (
+      {!allDone && !uploading && (
         <div
           className={`drop-zone${dragOver ? ' drag-over' : ''}`}
           role="button"
@@ -318,7 +318,7 @@ export default function UploadPage({ token }: UploadPageProps) {
         <>
           <div style={{
             position: 'sticky', top: 52, zIndex: 10,
-            background: 'var(--bg)', paddingBottom: 8,
+            background: 'var(--bg)', paddingBottom: 8, paddingTop: 12,
             display: 'flex', gap: 10, width: '100%',
           }}>
             {!allDone && (
