@@ -122,6 +122,11 @@ html, body {
 }
 .btn-primary:not(:disabled):hover { background: var(--blue-dark); }
 
+[data-theme='dark'] .btn-primary {
+  color: #202124;
+}
+[data-theme='dark'] .btn-primary:not(:disabled):hover { background: var(--blue-dark); }
+
 .btn-secondary {
   background: var(--bg-surface);
   color: var(--blue);
