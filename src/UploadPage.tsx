@@ -1,35 +1,11 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import imageCompression from 'browser-image-compression'
 import { getEvent, createUploadSession } from './api'
 import { useLocale } from './i18n'
 
-const SMALL_FILE_BYTES = 1 * 1024 * 1024   // 1 MB — skip compression below this
-const LARGE_FILE_BYTES = 15 * 1024 * 1024  // 15 MB — warn user
 const UPLOAD_CONCURRENCY = 5               // max parallel uploads
-
-interface CompressionResult {
-  file: File
-  compressed: boolean
-  wasLarge?: boolean
-}
-
-async function compressIfNeeded(file: File): Promise<CompressionResult> {
-  if (file.size <= SMALL_FILE_BYTES) return { file, compressed: false }
-
-  const isLarge = file.size > LARGE_FILE_BYTES
-  const compressed = await imageCompression(file, {
-    maxSizeMB: isLarge ? 6 : 2,  // 2 MB target for normal, 6 MB for very large
-    alwaysKeepResolution: true,   // quality-reduction only, never resize
-    initialQuality: 1,
-    preserveExif: true,
-    useWebWorker: false,  // avoid concurrent worker limits when compressing in parallel
-  })
-  return { file: compressed, compressed: true, wasLarge: isLarge }
-}
 
 const STATUS = {
   WAITING: 'waiting',
-  COMPRESSING: 'compressing',
   UPLOADING: 'uploading',
   DONE: 'done',
   ERROR: 'error',
@@ -44,7 +20,6 @@ interface FileEntry {
   status: FileStatus
   progress: number
   message: string
-  wasLarge?: boolean
 }
 
 interface UploadPageProps {
@@ -94,28 +69,12 @@ export default function UploadPage({ token }: UploadPageProps) {
     setUploading(true)
     setAllDone(false)
 
-    // Phase 1: compress images serially (concurrent canvas operations lock up browsers); videos skip compression
+    // Upload all files directly to Drive in parallel (no compression step)
     type Ready = { index: number; processedFile: File }
-    const ready: Ready[] = []
-    for (let i = 0; i < files.length; i++) {
-      const entry = files[i]
-      if (entry.raw.type.startsWith('video/')) {
-        ready.push({ index: i, processedFile: entry.raw })
-      } else {
-        updateFile(i, { status: STATUS.COMPRESSING, message: t.status_preparing })
-        try {
-          const result = await compressIfNeeded(entry.raw)
-          if (result.wasLarge) {
-            updateFile(i, { wasLarge: true, message: t.large_file_warn })
-          }
-          ready.push({ index: i, processedFile: result.file })
-        } catch {
-          updateFile(i, { status: STATUS.ERROR, message: t.err_compression })
-        }
-      }
-    }
+    const ready: Ready[] = files.map((f, i) => ({ index: i, processedFile: f.raw }))
 
-    // Phase 2: upload files directly to Drive via browser-initiated resumable session (parallel)
+    // Phase 2 label no longer needed — renamed comment
+    // Upload files directly to Drive via browser-initiated resumable session (parallel)
     const uploadOne = async ({ index: i, processedFile }: Ready) => {
       const entry = files[i]
       updateFile(i, { status: STATUS.UPLOADING, progress: 5, message: t.status_uploading })
@@ -281,23 +240,17 @@ export default function UploadPage({ token }: UploadPageProps) {
               return (
                 <li key={`${f.name}-${i}`} className={`file-item ${statusClass}`}>
                   <span className="file-item-name">{f.name}</span>
-                  {(f.status === STATUS.UPLOADING || f.status === STATUS.COMPRESSING) && (
+                  {f.status === STATUS.UPLOADING && (
                     <div className="progress-wrap">
                       <div className="progress-bar" style={{ width: `${f.progress}%` }} />
                     </div>
                   )}
                   <span className="file-item-status">
-                    {f.status === STATUS.WAITING     && t.status_ready((f.size / 1024 / 1024).toFixed(1))}
-                    {f.status === STATUS.COMPRESSING  && t.status_preparing}
-                    {f.status === STATUS.UPLOADING    && (f.message || t.status_uploading)}
-                    {f.status === STATUS.DONE         && t.status_done}
-                    {f.status === STATUS.ERROR        && `✗ ${f.message}`}
+                    {f.status === STATUS.WAITING   && t.status_ready((f.size / 1024 / 1024).toFixed(1))}
+                    {f.status === STATUS.UPLOADING  && (f.message || t.status_uploading)}
+                    {f.status === STATUS.DONE       && t.status_done}
+                    {f.status === STATUS.ERROR      && `✗ ${f.message}`}
                   </span>
-                  {f.wasLarge && f.status !== STATUS.ERROR && (
-                    <span className="alert alert-warn" style={{ padding: '4px 8px', marginTop: 2, fontSize: 12 }}>
-                      {t.large_file_warn}
-                    </span>
-                  )}
                 </li>
               )
             })}
