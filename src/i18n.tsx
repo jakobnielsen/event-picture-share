@@ -15,10 +15,11 @@ const en = {
   drop_aria: 'Select photos or videos to upload',
   drop_label: 'Tap to select photos or videos',
   drop_hint: 'or drag & drop here',
-  drop_info: 'Photos are compressed automatically · Videos supported',
+  drop_info: 'Photos and videos uploaded directly to Drive',
   input_aria: 'Select photos or videos',
   btn_uploading: 'Uploading…',
   btn_clear: 'Clear',
+  btn_retry: 'Retry',
 
   // UploadPage — dynamic
   status_ready: (mb: string) => `Ready — ${mb} MB`,
@@ -28,14 +29,13 @@ const en = {
   status_preparing: 'Preparing…',
   status_uploading: 'Uploading…',
   status_done: '✓ Uploaded',
+  status_retrying: (attempt: number, max: number) => `Resuming… (${attempt}/${max})`,
   large_file_warn: 'Large file — quality preserved as much as possible',
 
   // UploadPage — error messages
   err_invalid_link: 'Invalid link.',
   err_connection: 'Could not reach the server. Check your connection.',
   err_qr_hint: 'Make sure you scanned the correct QR code.',
-  err_compression: 'Compression failed',
-  err_read: 'Could not read file',
   err_network: 'Network error',
   err_upload: 'Upload failed',
 
@@ -70,17 +70,18 @@ const en = {
 
 const da: typeof en = {
   landing_title: 'Event Billededeling',
-  landing_desc: 'Scan QR-koden ved dit arrangement for at uploade billeder direkte til arrangørens Google Drev.',
+  landing_desc: 'Scan QR-koden ved dit arrangement for at uploade billeder direkte til arrangørens Google Drive.',
 
   upload_subtitle: 'Upload dine billeder og videoer fra arrangementet',
   upload_success: 'Alle filer er uploadet! Tak 🎉',
   drop_aria: 'Vælg billeder eller videoer til upload',
   drop_label: 'Tryk for at vælge billeder eller videoer',
   drop_hint: 'eller træk og slip her',
-  drop_info: 'Billeder komprimeres automatisk · Videoer understøttes',
+  drop_info: 'Billeder og videoer uploades direkte til Drive',
   input_aria: 'Vælg billeder eller videoer',
   btn_uploading: 'Uploader…',
   btn_clear: 'Ryd',
+  btn_retry: 'Prøv igen',
 
   status_ready: (mb: string) => `Klar — ${mb} MB`,
   btn_upload: (n: number) => `Upload ${n} fil${n === 1 ? '' : 'er'}`,
@@ -88,13 +89,12 @@ const da: typeof en = {
   status_preparing: 'Forbereder…',
   status_uploading: 'Uploader…',
   status_done: '✓ Uploadet',
+  status_retrying: (attempt: number, max: number) => `Genoptager… (${attempt}/${max})`,
   large_file_warn: 'Stor fil — kvaliteten bevares så vidt muligt',
 
   err_invalid_link: 'Ugyldigt link.',
   err_connection: 'Kunne ikke nå serveren. Tjek din forbindelse.',
   err_qr_hint: 'Sørg for at du scannede den rigtige QR-kode.',
-  err_compression: 'Komprimering mislykkedes',
-  err_read: 'Kunne ikke læse filen',
   err_network: 'Netværksfejl',
   err_upload: 'Upload mislykkedes',
 
