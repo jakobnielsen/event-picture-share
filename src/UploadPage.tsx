@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { getEvent, createUploadSession } from './api'
 import { useLocale } from './i18n'
 
-const UPLOAD_CONCURRENCY = 5               // max parallel uploads
+const UPLOAD_CONCURRENCY = 3               // max parallel uploads — safe for 4G on both iOS and Android
 const UPLOAD_MAX_RETRIES = 3               // auto-retry attempts on network failure
 
 const STATUS = {
