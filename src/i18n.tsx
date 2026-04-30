@@ -15,7 +15,7 @@ const en = {
   drop_aria: 'Select photos or videos to upload',
   drop_label: 'Tap to select photos or videos',
   drop_hint: 'or drag & drop here',
-  drop_info: 'Photos and videos uploaded directly to Drive',
+  drop_info: 'Photos and videos uploaded directly to Google Drive',
   input_aria: 'Select photos or videos',
   btn_uploading: 'Uploading…',
   btn_clear: 'Clear',
@@ -65,7 +65,16 @@ const en = {
   card_hide_qr: 'Hide QR',
   card_show_qr: '🔲 Show QR',
   card_download_qr: '⬇ Download QR',
-  card_drive: '📁 Drive folder',
+  card_drive: '📁 Google Drive folder',
+
+  // QR Scanner
+  scan_btn: 'Scan QR code',
+  scan_title: 'Scan QR code',
+  scan_hint: 'Point the camera at the event QR code',
+  scan_no_camera: 'Camera not available',
+  scan_no_permission: 'Camera permission denied',
+  scan_error: 'Could not start camera',
+  scan_close: 'Close',
 }
 
 const da: typeof en = {
@@ -77,7 +86,7 @@ const da: typeof en = {
   drop_aria: 'Vælg billeder eller videoer til upload',
   drop_label: 'Tryk for at vælge billeder eller videoer',
   drop_hint: 'eller træk og slip her',
-  drop_info: 'Billeder og videoer uploades direkte til Drive',
+  drop_info: 'Billeder og videoer uploades direkte til Google Drive',
   input_aria: 'Vælg billeder eller videoer',
   btn_uploading: 'Uploader…',
   btn_clear: 'Ryd',
@@ -121,8 +130,15 @@ const da: typeof en = {
   card_hide_qr: 'Skjul QR',
   card_show_qr: '🔲 Vis QR',
   card_download_qr: '⬇ Download QR',
-  card_drive: '📁 Drev-mappe',
-}
+  card_drive: '📁 Google Drive-mappe',
+  // QR Scanner
+  scan_btn: 'Scan QR-kode',
+  scan_title: 'Scan QR-kode',
+  scan_hint: 'Ret kameraet mod arrangementets QR-kode',
+  scan_no_camera: 'Kamera ikke tilgængeligt',
+  scan_no_permission: 'Kameraadgang afvist',
+  scan_error: 'Kunne ikke starte kamera',
+  scan_close: 'Luk',}
 
 const translations: Record<Locale, typeof en> = { en, da }
 
