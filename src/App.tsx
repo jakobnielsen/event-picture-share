@@ -3,6 +3,7 @@ import UploadPage from './UploadPage'
 import AdminPage from './AdminPage'
 import LandingPage from './LandingPage'
 import ThemeToggle from './ThemeToggle'
+import { LocaleProvider, LocaleToggle } from './i18n'
 
 export default function App() {
   const { page, token } = useMemo(() => {
@@ -14,11 +15,14 @@ export default function App() {
   }, [])
 
   return (
-    <>
-      <ThemeToggle />
+    <LocaleProvider>
+      <div className="top-bar">
+        <LocaleToggle />
+        <ThemeToggle />
+      </div>
       {page === 'upload' && token ? <UploadPage token={token} /> :
        page === 'admin' ? <AdminPage /> :
        <LandingPage />}
-    </>
+    </LocaleProvider>
   )
 }

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import QRCode from 'qrcode'
 import { createEvent, listEvents, type EventRecord } from './api'
+import { useLocale } from './i18n'
 
 const ADMIN_KEY_STORAGE = 'eps_admin_key'
 const BASE_PATH = import.meta.env.BASE_URL  // '/event-picture-share/'
@@ -17,6 +18,7 @@ interface EventCardProps {
 }
 
 function EventCard({ event }: EventCardProps) {
+  const { t } = useLocale()
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [qrVisible, setQrVisible] = useState(false)
   const url = buildUploadUrl(event.token)
@@ -57,17 +59,17 @@ function EventCard({ event }: EventCardProps) {
   return (
     <div className="event-card">
       <h3>{event.name}</h3>
-      {createdDate && <p className="event-card-meta">Created {createdDate}</p>}
+      {createdDate && <p className="event-card-meta">{t.card_created(createdDate)}</p>}
       <div className="event-card-actions">
         <button className="btn btn-secondary" onClick={qrVisible ? () => setQrVisible(false) : showQr}>
-          {qrVisible ? 'Hide QR' : '🔲 Show QR'}
+          {qrVisible ? t.card_hide_qr : t.card_show_qr}
         </button>
         <button className="btn btn-secondary" onClick={downloadQr}>
-          ⬇ Download QR
+          {t.card_download_qr}
         </button>
         {event.folderUrl && (
           <a className="btn btn-secondary" href={event.folderUrl} target="_blank" rel="noreferrer">
-            📁 Drive folder
+            {t.card_drive}
           </a>
         )}
       </div>
@@ -84,6 +86,7 @@ function EventCard({ event }: EventCardProps) {
 // ── AdminPage ─────────────────────────────────────────────────
 
 export default function AdminPage() {
+  const { t } = useLocale()
   const [adminKey, setAdminKey] = useState<string>(() => localStorage.getItem(ADMIN_KEY_STORAGE) ?? '')
   const [keyInput, setKeyInput] = useState('')
   const [authenticated, setAuthenticated] = useState(() => !!localStorage.getItem(ADMIN_KEY_STORAGE))
@@ -114,11 +117,11 @@ export default function AdminPage() {
         if (data.ok) {
           setEvents((data.events ?? []).slice().reverse()) // newest first
         } else {
-          setEventsError(data.error ?? 'Failed to load events')
+          setEventsError(data.error ?? t.admin_err_load)
           if (data.error === 'Invalid adminKey') handleLogout()
         }
       })
-      .catch(() => setEventsError('Network error'))
+      .catch(() => setEventsError(t.admin_err_network))
       .finally(() => setLoadingEvents(false))
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authenticated, adminKey])
@@ -165,24 +168,24 @@ export default function AdminPage() {
     return (
       <main className="page">
         <div className="page-header">
-          <h1>🔑 Admin</h1>
-          <p>Enter your admin key to manage events</p>
+          <h1>🔑 {t.admin_title}</h1>
+          <p>{t.admin_subtitle}</p>
         </div>
         <div className="card">
           <form onSubmit={handleLogin}>
             <div className="form-group">
-              <label htmlFor="admin-key">Admin key</label>
+              <label htmlFor="admin-key">{t.admin_key_label}</label>
               <input
                 id="admin-key"
                 type="password"
                 value={keyInput}
                 onChange={e => setKeyInput(e.target.value)}
-                placeholder="Paste your admin key"
+                placeholder={t.admin_key_placeholder}
                 autoComplete="current-password"
               />
             </div>
             <button className="btn btn-primary btn-full" type="submit" disabled={!keyInput.trim()}>
-              Sign in
+              {t.admin_signin}
             </button>
           </form>
         </div>
@@ -194,36 +197,36 @@ export default function AdminPage() {
   return (
     <main className="page">
       <div className="page-header">
-        <h1>🗂 Events</h1>
+        <h1>🗂 {t.admin_events_title}</h1>
         <p>
-          Manage photo events &nbsp;·&nbsp;{' '}
+          {t.admin_events_subtitle} &nbsp;·&nbsp;{' '}
           <button
             style={{ background: 'none', border: 'none', color: 'var(--blue)', cursor: 'pointer', fontSize: 'inherit', padding: 0 }}
             onClick={handleLogout}
           >
-            Sign out
+            {t.admin_signout}
           </button>
         </p>
       </div>
 
       {/* Create event form */}
       <div className="card" style={{ marginBottom: 24 }}>
-        <h2 style={{ margin: '0 0 16px', fontSize: 16, fontWeight: 500 }}>New event</h2>
+        <h2 style={{ margin: '0 0 16px', fontSize: 16, fontWeight: 500 }}>{t.admin_new_event}</h2>
         <form onSubmit={handleCreate}>
           <div className="form-group">
-            <label htmlFor="event-name">Event name</label>
+            <label htmlFor="event-name">{t.admin_event_name_label}</label>
             <input
               id="event-name"
               type="text"
               value={newName}
               onChange={e => setNewName(e.target.value)}
-              placeholder="e.g. Summer Wedding 2026"
+              placeholder={t.admin_event_name_placeholder}
               maxLength={100}
             />
           </div>
           {createError && <div className="alert alert-error">{createError}</div>}
           <button className="btn btn-primary btn-full" type="submit" disabled={creating || !newName.trim()}>
-            {creating ? 'Creating…' : 'Create event & generate QR'}
+            {creating ? t.admin_creating : t.admin_create_btn}
           </button>
         </form>
       </div>
@@ -234,7 +237,7 @@ export default function AdminPage() {
       {loadingEvents && <div className="spinner" />}
       {eventsError && <div className="alert alert-error">{eventsError}</div>}
       {!loadingEvents && !eventsError && events.length === 0 && (
-        <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>No events yet. Create one above.</p>
+        <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>{t.admin_no_events}</p>
       )}
       {events.length > 0 && (
         <div className="events-list">

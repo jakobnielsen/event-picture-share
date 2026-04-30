@@ -349,6 +349,9 @@ html, body {
   right: 0;
   padding: 10px 16px;
   z-index: 100;
+  display: flex;
+  gap: 8px;
+  align-items: center;
 }
 
 .theme-toggle {

@@ -24,15 +24,13 @@ export function useTheme() {
 export default function ThemeToggle() {
   const { theme, toggle } = useTheme()
   return (
-    <div className="top-bar">
-      <button
-        className="theme-toggle"
-        onClick={toggle}
-        aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
-        title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
-      >
-        {theme === 'light' ? '🌙' : '☀️'}
-      </button>
-    </div>
+    <button
+      className="theme-toggle"
+      onClick={toggle}
+      aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
+      title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
+    >
+      {theme === 'light' ? '🌙' : '☀️'}
+    </button>
   )
 }

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import imageCompression from 'browser-image-compression'
 import { getEvent, createUploadSession } from './api'
+import { useLocale } from './i18n'
 
 const SMALL_FILE_BYTES = 1 * 1024 * 1024   // 1 MB — skip compression below this
 const LARGE_FILE_BYTES = 15 * 1024 * 1024  // 15 MB — warn user
@@ -51,6 +52,7 @@ interface UploadPageProps {
 }
 
 export default function UploadPage({ token }: UploadPageProps) {
+  const { t } = useLocale()
   const [eventName, setEventName] = useState<string | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [files, setFiles] = useState<FileEntry[]>([])
@@ -63,10 +65,10 @@ export default function UploadPage({ token }: UploadPageProps) {
     getEvent(token)
       .then(data => {
         if (data.ok) setEventName(data.name)
-        else setLoadError(data.error ?? 'Invalid link.')
+        else setLoadError(data.error ?? t.err_invalid_link)
       })
-      .catch(() => setLoadError('Could not reach the server. Check your connection.'))
-  }, [token])
+      .catch(() => setLoadError(t.err_connection))
+  }, [token, t])
 
   const updateFile = useCallback((index: number, patch: Partial<FileEntry>) => {
     setFiles(prev => prev.map((f, i) => (i === index ? { ...f, ...patch } : f)))
@@ -100,15 +102,15 @@ export default function UploadPage({ token }: UploadPageProps) {
       if (entry.raw.type.startsWith('video/')) {
         ready.push({ index: i, processedFile: entry.raw })
       } else {
-        updateFile(i, { status: STATUS.COMPRESSING, message: 'Preparing…' })
+        updateFile(i, { status: STATUS.COMPRESSING, message: t.status_preparing })
         try {
           const result = await compressIfNeeded(entry.raw)
           if (result.wasLarge) {
-            updateFile(i, { wasLarge: true, message: 'Large file — quality preserved as much as possible' })
+            updateFile(i, { wasLarge: true, message: t.large_file_warn })
           }
           ready.push({ index: i, processedFile: result.file })
         } catch {
-          updateFile(i, { status: STATUS.ERROR, message: 'Compression failed' })
+          updateFile(i, { status: STATUS.ERROR, message: t.err_compression })
         }
       }
     }
@@ -116,7 +118,7 @@ export default function UploadPage({ token }: UploadPageProps) {
     // Phase 2: upload files directly to Drive via browser-initiated resumable session (parallel)
     const uploadOne = async ({ index: i, processedFile }: Ready) => {
       const entry = files[i]
-      updateFile(i, { status: STATUS.UPLOADING, progress: 5, message: 'Uploading…' })
+      updateFile(i, { status: STATUS.UPLOADING, progress: 5, message: t.status_uploading })
 
       // Ask Apps Script for a token + folder to initiate the Drive session from the browser.
       // Browser-initiated sessions include the Origin header, which makes Drive include
@@ -125,11 +127,11 @@ export default function UploadPage({ token }: UploadPageProps) {
       try {
         sessionRes = await createUploadSession(token, entry.name, processedFile.type)
         if (!sessionRes.ok) {
-          updateFile(i, { status: STATUS.ERROR, progress: 0, message: sessionRes.error ?? 'Upload failed' })
+          updateFile(i, { status: STATUS.ERROR, progress: 0, message: sessionRes.error ?? t.err_upload })
           return
         }
       } catch {
-        updateFile(i, { status: STATUS.ERROR, progress: 0, message: 'Network error' })
+        updateFile(i, { status: STATUS.ERROR, progress: 0, message: t.err_network })
         return
       }
 
@@ -151,12 +153,12 @@ export default function UploadPage({ token }: UploadPageProps) {
         )
         const location = initRes.headers.get('Location')
         if (!initRes.ok || !location) {
-          updateFile(i, { status: STATUS.ERROR, progress: 0, message: 'Upload failed' })
+          updateFile(i, { status: STATUS.ERROR, progress: 0, message: t.err_upload })
           return
         }
         uploadUrl = location
       } catch {
-        updateFile(i, { status: STATUS.ERROR, progress: 0, message: 'Network error' })
+        updateFile(i, { status: STATUS.ERROR, progress: 0, message: t.err_network })
         return
       }
 
@@ -176,12 +178,12 @@ export default function UploadPage({ token }: UploadPageProps) {
           if (xhr.status >= 200 && xhr.status < 300) {
             updateFile(i, { status: STATUS.DONE, progress: 100, message: 'Uploaded!' })
           } else {
-            updateFile(i, { status: STATUS.ERROR, progress: 0, message: 'Upload failed' })
+            updateFile(i, { status: STATUS.ERROR, progress: 0, message: t.err_upload })
           }
           resolve()
         }
         xhr.onerror = () => {
-          updateFile(i, { status: STATUS.ERROR, progress: 0, message: 'Network error' })
+          updateFile(i, { status: STATUS.ERROR, progress: 0, message: t.err_network })
           resolve()
         }
         xhr.send(processedFile)
@@ -198,7 +200,7 @@ export default function UploadPage({ token }: UploadPageProps) {
 
     setUploading(false)
     setAllDone(true)
-  }, [files, uploading, token, updateFile])
+  }, [files, uploading, token, updateFile, t])
 
   const reset = () => {
     setFiles([])
@@ -214,7 +216,7 @@ export default function UploadPage({ token }: UploadPageProps) {
           ⚠️ {loadError}
         </div>
         <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>
-          Make sure you scanned the correct QR code.
+          {t.err_qr_hint}
         </p>
       </main>
     )
@@ -233,12 +235,12 @@ export default function UploadPage({ token }: UploadPageProps) {
     <main className="page">
       <div className="page-header">
         <h1>📷 {eventName}</h1>
-        <p>Upload your photos and videos from the event</p>
+        <p>{t.upload_subtitle}</p>
       </div>
 
       {allDone && files.every(f => f.status === STATUS.DONE) && (
         <div className="alert alert-success">
-          All files uploaded successfully! Thank you 🎉
+          {t.upload_success}
         </div>
       )}
 
@@ -247,18 +249,18 @@ export default function UploadPage({ token }: UploadPageProps) {
           className={`drop-zone${dragOver ? ' drag-over' : ''}`}
           role="button"
           tabIndex={0}
-          aria-label="Select photos or videos to upload"
+          aria-label={t.drop_aria}
           onDragOver={e => { e.preventDefault(); setDragOver(true) }}
           onDragLeave={() => setDragOver(false)}
           onDrop={e => { e.preventDefault(); setDragOver(false); handleFiles(e.dataTransfer.files) }}
           onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') inputRef.current?.click() }}
         >
           <span className="drop-zone-icon">🖼️</span>
-          <strong>Tap to select photos or videos</strong>
+          <strong>{t.drop_label}</strong>
           <br />
-          <span style={{ fontSize: 12, marginTop: 4, display: 'block' }}>or drag &amp; drop here</span>
+          <span style={{ fontSize: 12, marginTop: 4, display: 'block' }}>{t.drop_hint}</span>
           <span style={{ fontSize: 11, marginTop: 6, display: 'block', color: 'var(--text-muted)' }}>
-            Photos are compressed automatically · Videos supported
+            {t.drop_info}
           </span>
           <input
             ref={inputRef}
@@ -266,7 +268,7 @@ export default function UploadPage({ token }: UploadPageProps) {
             accept="image/*,video/*"
             multiple
             onChange={e => handleFiles(e.target.files)}
-            aria-label="Select photos or videos"
+            aria-label={t.input_aria}
           />
         </div>
       )}
@@ -285,15 +287,15 @@ export default function UploadPage({ token }: UploadPageProps) {
                     </div>
                   )}
                   <span className="file-item-status">
-                    {f.status === STATUS.WAITING     && `Ready — ${(f.size / 1024 / 1024).toFixed(1)} MB`}
-                    {f.status === STATUS.COMPRESSING  && 'Preparing…'}
-                    {f.status === STATUS.UPLOADING    && (f.message || 'Uploading…')}
-                    {f.status === STATUS.DONE         && '✓ Uploaded'}
+                    {f.status === STATUS.WAITING     && t.status_ready((f.size / 1024 / 1024).toFixed(1))}
+                    {f.status === STATUS.COMPRESSING  && t.status_preparing}
+                    {f.status === STATUS.UPLOADING    && (f.message || t.status_uploading)}
+                    {f.status === STATUS.DONE         && t.status_done}
                     {f.status === STATUS.ERROR        && `✗ ${f.message}`}
                   </span>
                   {f.wasLarge && f.status !== STATUS.ERROR && (
                     <span className="alert alert-warn" style={{ padding: '4px 8px', marginTop: 2, fontSize: 12 }}>
-                      Large file — quality preserved as much as possible
+                      {t.large_file_warn}
                     </span>
                   )}
                 </li>
@@ -308,12 +310,12 @@ export default function UploadPage({ token }: UploadPageProps) {
                 onClick={startUpload}
                 disabled={uploading || files.every(f => f.status === STATUS.DONE)}
               >
-                {uploading ? 'Uploading…' : `Upload ${files.length} file${files.length === 1 ? '' : 's'}`}
+                {uploading ? t.btn_uploading : t.btn_upload(files.length)}
               </button>
             )}
             {(allDone || !uploading) && (
               <button className="btn btn-secondary" onClick={reset} disabled={uploading}>
-                Clear
+                {t.btn_clear}
               </button>
             )}
           </div>
