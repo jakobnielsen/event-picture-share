@@ -29,6 +29,7 @@ const en = {
   status_preparing: 'Preparing…',
   status_uploading: 'Uploading…',
   status_done: '✓ Uploaded',
+  status_already_uploaded: '✓ Already uploaded',
   status_retrying: (attempt: number, max: number) => `Resuming… (${attempt}/${max})`,
   large_file_warn: 'Large file — quality preserved as much as possible',
 
@@ -109,6 +110,7 @@ const da: typeof en = {
   status_preparing: 'Forbereder…',
   status_uploading: 'Uploader…',
   status_done: '✓ Uploadet',
+  status_already_uploaded: '✓ Allerede uploadet',
   status_retrying: (attempt: number, max: number) => `Genoptager… (${attempt}/${max})`,
   large_file_warn: 'Stor fil — kvaliteten bevares så vidt muligt',
 

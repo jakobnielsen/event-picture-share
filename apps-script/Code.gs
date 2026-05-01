@@ -167,6 +167,17 @@ function handleCreateUploadSession(body) {
   var safeName = body.filename.replace(/[^a-zA-Z0-9.\-_ ()]/g, '_');
   if (safeName.length === 0) safeName = 'file';
 
+  // Deduplicate: if a file with this name already exists in the folder, skip the upload
+  try {
+    var folder = DriveApp.getFolderById(ev.folderId);
+    if (folder.getFilesByName(safeName).hasNext()) {
+      return jsonResponse({ ok: true, alreadyExists: true });
+    }
+  } catch (err) {
+    Logger.log('Duplicate check error: ' + err.toString());
+    // Fall through — let the upload proceed if the check fails
+  }
+
   return jsonResponse({
     ok: true,
     uploadToken: ScriptApp.getOAuthToken(),

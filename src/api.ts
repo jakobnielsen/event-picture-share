@@ -19,6 +19,7 @@ export interface UploadResponse {
 
 export interface CreateUploadSessionResponse {
   ok: true
+  alreadyExists?: true
   uploadToken: string
   folderId: string
   safeName: string

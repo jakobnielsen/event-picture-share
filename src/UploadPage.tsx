@@ -162,6 +162,10 @@ export default function UploadPage({ token }: UploadPageProps) {
             updateFile(i, { status: STATUS.ERROR, progress: 0, message: sessionRes.error ?? t.err_upload })
             return
           }
+          if (sessionRes.alreadyExists) {
+            updateFile(i, { status: STATUS.DONE, progress: 100, message: t.status_already_uploaded })
+            return
+          }
         } catch {
           updateFile(i, { status: STATUS.ERROR, progress: 0, message: t.err_network })
           return
