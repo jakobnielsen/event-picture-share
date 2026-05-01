@@ -142,6 +142,15 @@ export async function reopenEvent(
   return postJson<{ ok: true; expiresAt: string }>({ action: 'reopenEvent', adminKey, token, expiryDays })
 }
 
+/** POST action:deleteEvent — removes event record; optionally moves Drive folder to trash */
+export async function deleteEvent(
+  adminKey: string,
+  token: string,
+  deleteFolder: boolean,
+): Promise<ApiResponse<{ ok: true }>> {
+  return postJson<{ ok: true }>({ action: 'deleteEvent', adminKey, token, deleteFolder })
+}
+
 /** POST action:listEvents — returns all events for the admin dashboard */
 export async function listEvents(adminKey: string): Promise<ApiResponse<ListEventsResponse>> {
   return postJson<ListEventsResponse>({ action: 'listEvents', adminKey })

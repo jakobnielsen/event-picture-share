@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import QRCode from 'qrcode'
-import { createEvent, listEvents, revokeEvent, reopenEvent, type EventRecord } from './api'
+import { createEvent, listEvents, revokeEvent, reopenEvent, deleteEvent, type EventRecord } from './api'
 import { useLocale } from './i18n'
 
 const ADMIN_KEY_STORAGE = 'eps_admin_key'
@@ -17,14 +17,16 @@ interface EventCardProps {
   event: EventRecord
   onRevoke: (token: string) => void
   onReopen: (token: string) => void
+  onDelete: (token: string, deleteFolder: boolean) => void
 }
 
-function EventCard({ event, onRevoke, onReopen }: EventCardProps) {
+function EventCard({ event, onRevoke, onReopen, onDelete }: EventCardProps) {
   const { t } = useLocale()
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [qrVisible, setQrVisible] = useState(false)
   const [revoking, setRevoking] = useState(false)
   const [reopening, setReopening] = useState(false)
+  const [deleting, setDeleting] = useState(false)
   const url = buildUploadUrl(event.token)
 
   const showQr = async () => {
@@ -119,6 +121,18 @@ function EventCard({ event, onRevoke, onReopen }: EventCardProps) {
             {t.card_reopen_btn}
           </button>
         )}
+        <button
+          className="btn btn-danger"
+          disabled={deleting}
+          onClick={async () => {
+            if (!confirm(t.card_delete_confirm)) return
+            const withFolder = confirm(t.card_delete_folder_confirm)
+            setDeleting(true)
+            onDelete(event.token, withFolder)
+          }}
+        >
+          {t.card_delete_btn}
+        </button>
       </div>
       {qrVisible && (
         <div className="qr-wrap">
@@ -236,6 +250,15 @@ export default function AdminPage() {
     }
   }
 
+  const handleDelete = async (token: string, deleteFolder: boolean) => {
+    try {
+      await deleteEvent(adminKey, token, deleteFolder)
+      setEvents(prev => prev.filter(ev => ev.token !== token))
+    } catch {
+      // Silently fail
+    }
+  }
+
   // ── Auth gate ───────────────────────────────────────────────
   if (!authenticated) {
     return (
@@ -326,7 +349,7 @@ export default function AdminPage() {
       {events.length > 0 && (
         <div className="events-list">
           {events.map(ev => (
-            <EventCard key={ev.token} event={ev} onRevoke={handleRevoke} onReopen={handleReopen} />
+            <EventCard key={ev.token} event={ev} onRevoke={handleRevoke} onReopen={handleReopen} onDelete={handleDelete} />
           ))}
         </div>
       )}

@@ -118,6 +118,9 @@ function doPost(e) {
   if (action === 'reopenEvent') {
     return handleReopenEvent(body);
   }
+  if (action === 'deleteEvent') {
+    return handleDeleteEvent(body);
+  }
 
   return error('Unknown action');
 }
@@ -168,7 +171,9 @@ function handleCreateUploadSession(body) {
   var ev = events.find(function(e) { return e.token === body.token; });
   if (!ev) return error('Invalid token');
   if (ev.revoked) return error('Event closed');
-  if (ev.expiresAt && new Date(ev.expiresAt) < new Date()) return error('Event expired');.replace(/[^a-zA-Z0-9.\-_ ()]/g, '_');
+  if (ev.expiresAt && new Date(ev.expiresAt) < new Date()) return error('Event expired');
+
+  var safeName = body.filename.replace(/[^a-zA-Z0-9.\-_ ()]/g, '_');
   if (safeName.length === 0) safeName = 'file';
 
   // Deduplicate: if a file with this name already exists in the folder, skip the upload
@@ -293,4 +298,33 @@ function handleReopenEvent(body) {
   }
   saveEvents(events);
   return jsonResponse({ ok: true, expiresAt: ev.expiresAt });
+}
+
+// ── Action: deleteEvent ───────────────────────────────────────
+// Body: { action, adminKey, token, deleteFolder? }
+// Removes the event record. Optionally moves the Drive folder to trash.
+
+function handleDeleteEvent(body) {
+  if (!body.adminKey) return error('Missing adminKey');
+  if (!validateAdminKey(body.adminKey)) return error('Invalid adminKey');
+  if (!body.token) return error('Missing token');
+
+  var events = getEvents();
+  var idx = events.findIndex(function(e) { return e.token === body.token; });
+  if (idx === -1) return error('Event not found');
+
+  var ev = events[idx];
+
+  if (body.deleteFolder && ev.folderId) {
+    try {
+      DriveApp.getFolderById(ev.folderId).setTrashed(true);
+    } catch (err) {
+      Logger.log('deleteEvent folder trash error: ' + err.toString());
+      return error('Failed to move folder to trash: ' + err.message);
+    }
+  }
+
+  events.splice(idx, 1);
+  saveEvents(events);
+  return jsonResponse({ ok: true });
 }
