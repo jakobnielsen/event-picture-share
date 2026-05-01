@@ -187,7 +187,7 @@ export function LocaleToggle() {
       aria-label={locale === 'en' ? 'Skift til dansk' : 'Switch to English'}
       title={locale === 'en' ? 'Skift til dansk' : 'Switch to English'}
     >
-      {locale === 'en' ? 'DA' : 'EN'}
+      {locale === 'en' ? '🇩🇰 DA' : '🇬🇧 EN'}
     </button>
   )
 }
