@@ -15,7 +15,7 @@ function isInStandaloneMode() {
     || ('standalone' in navigator && (navigator as Navigator & { standalone?: boolean }).standalone === true)
 }
 
-export default function InstallPrompt() {
+export default function InstallPrompt({ ignoreStandalone = false }: { ignoreStandalone?: boolean }) {
   const { t } = useLocale()
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null)
   const [showIosTooltip, setShowIosTooltip] = useState(false)
@@ -23,7 +23,7 @@ export default function InstallPrompt() {
   const tooltipRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    if (isInStandaloneMode()) return
+    if (!ignoreStandalone && isInStandaloneMode()) return
 
     if (isIos()) {
       setIos(true)

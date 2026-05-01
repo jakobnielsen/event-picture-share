@@ -13,7 +13,7 @@ createRoot(rootEl).render(
   <StrictMode>
     <LocaleProvider>
       <div className="top-bar">
-        <InstallPrompt />
+        <InstallPrompt ignoreStandalone />
         <LocaleToggle />
         <ThemeToggle />
       </div>
