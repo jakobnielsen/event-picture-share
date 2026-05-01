@@ -1,5 +1,7 @@
 # Event Photo Share
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
 A free-to-host progressive web app that lets event attendees upload photos and videos directly to the organizer's Google Drive — just scan a QR code, no app install required.
 
 **No subscriptions. No third-party storage. Files go straight to your Google Drive.**
