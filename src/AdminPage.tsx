@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import QRCode from 'qrcode'
-import { createEvent, listEvents, type EventRecord } from './api'
+import { createEvent, listEvents, revokeEvent, reopenEvent, type EventRecord } from './api'
 import { useLocale } from './i18n'
 
 const ADMIN_KEY_STORAGE = 'eps_admin_key'
@@ -15,12 +15,16 @@ function buildUploadUrl(token: string): string {
 
 interface EventCardProps {
   event: EventRecord
+  onRevoke: (token: string) => void
+  onReopen: (token: string) => void
 }
 
-function EventCard({ event }: EventCardProps) {
+function EventCard({ event, onRevoke, onReopen }: EventCardProps) {
   const { t } = useLocale()
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [qrVisible, setQrVisible] = useState(false)
+  const [revoking, setRevoking] = useState(false)
+  const [reopening, setReopening] = useState(false)
   const url = buildUploadUrl(event.token)
 
   const showQr = async () => {
@@ -55,15 +59,32 @@ function EventCard({ event }: EventCardProps) {
   const createdDate = event.createdAt
     ? new Date(event.createdAt).toLocaleDateString(undefined, { dateStyle: 'medium' })
     : ''
+  const expiresDate = event.expiresAt
+    ? new Date(event.expiresAt).toLocaleDateString(undefined, { dateStyle: 'medium' })
+    : ''
+  const isExpired = !!event.expiresAt && new Date(event.expiresAt) < new Date()
+  const isClosed = event.revoked || isExpired
 
   return (
-    <div className="event-card">
+    <div className={`event-card${isClosed ? ' event-card--closed' : ''}`}>
       <h3>{event.name}</h3>
-      {createdDate && <p className="event-card-meta">{t.card_created(createdDate)}</p>}
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
+        {createdDate && <span className="event-card-meta">{t.card_created(createdDate)}</span>}
+        {event.revoked
+          ? <span className="event-card-badge event-card-badge--revoked">{t.card_revoked}</span>
+          : isExpired
+            ? <span className="event-card-badge event-card-badge--expired">{t.card_expired}</span>
+            : expiresDate
+              ? <span className="event-card-meta">{t.card_expires(expiresDate)}</span>
+              : null
+        }
+      </div>
       <div className="event-card-actions">
-        <button className="btn btn-secondary" onClick={qrVisible ? () => setQrVisible(false) : showQr}>
-          {qrVisible ? t.card_hide_qr : t.card_show_qr}
-        </button>
+        {!isClosed && (
+          <button className="btn btn-secondary" onClick={qrVisible ? () => setQrVisible(false) : showQr}>
+            {qrVisible ? t.card_hide_qr : t.card_show_qr}
+          </button>
+        )}
         <button className="btn btn-secondary" onClick={downloadQr}>
           {t.card_download_qr}
         </button>
@@ -71,6 +92,32 @@ function EventCard({ event }: EventCardProps) {
           <a className="btn btn-secondary" href={event.folderUrl} target="_blank" rel="noreferrer">
             {t.card_drive}
           </a>
+        )}
+        {!isClosed && (
+          <button
+            className="btn btn-danger"
+            disabled={revoking}
+            onClick={async () => {
+              if (!confirm(t.card_revoke_confirm)) return
+              setRevoking(true)
+              onRevoke(event.token)
+            }}
+          >
+            {t.card_revoke_btn}
+          </button>
+        )}
+        {isClosed && (
+          <button
+            className="btn btn-secondary"
+            disabled={reopening}
+            onClick={async () => {
+              if (!confirm(t.card_reopen_confirm)) return
+              setReopening(true)
+              onReopen(event.token)
+            }}
+          >
+            {t.card_reopen_btn}
+          </button>
         )}
       </div>
       {qrVisible && (
@@ -96,6 +143,7 @@ export default function AdminPage() {
   const [eventsError, setEventsError] = useState<string | null>(null)
 
   const [newName, setNewName] = useState('')
+  const [expiryDays, setExpiryDays] = useState(14)
   const [creating, setCreating] = useState(false)
   const [createError, setCreateError] = useState<string | null>(null)
 
@@ -142,15 +190,18 @@ export default function AdminPage() {
     setCreating(true)
     setCreateError(null)
     try {
-      const data = await createEvent(adminKey, name)
+      const data = await createEvent(adminKey, name, expiryDays)
       if (data.ok) {
         setNewName('')
+        setExpiryDays(14)
         const newEvent: EventRecord = {
           name,
           token: data.token,
           folderId: data.folderId,
           folderUrl: data.folderUrl,
           createdAt: new Date().toISOString(),
+          expiresAt: data.expiresAt,
+          revoked: false,
         }
         setEvents(prev => [newEvent, ...prev])
       } else {
@@ -160,6 +211,28 @@ export default function AdminPage() {
       setCreateError('Network error')
     } finally {
       setCreating(false)
+    }
+  }
+
+  const handleRevoke = async (token: string) => {
+    try {
+      await revokeEvent(adminKey, token)
+      setEvents(prev => prev.map(ev => ev.token === token ? { ...ev, revoked: true } : ev))
+    } catch {
+      // Silently fail — the card will still show as active until next reload
+    }
+  }
+
+  const handleReopen = async (token: string) => {
+    try {
+      const res = await reopenEvent(adminKey, token)
+      if (res.ok) {
+        setEvents(prev => prev.map(ev =>
+          ev.token === token ? { ...ev, revoked: false, expiresAt: res.expiresAt } : ev
+        ))
+      }
+    } catch {
+      // Silently fail
     }
   }
 
@@ -224,6 +297,17 @@ export default function AdminPage() {
               maxLength={100}
             />
           </div>
+          <div className="form-group">
+            <label htmlFor="expiry-days">{t.admin_expiry_label}</label>
+            <input
+              id="expiry-days"
+              type="number"
+              min={1}
+              max={365}
+              value={expiryDays}
+              onChange={e => setExpiryDays(Math.max(1, Math.min(365, parseInt(e.target.value) || 14)))}
+            />
+          </div>
           {createError && <div className="alert alert-error">{createError}</div>}
           <button className="btn btn-primary btn-full" type="submit" disabled={creating || !newName.trim()}>
             {creating ? t.admin_creating : t.admin_create_btn}
@@ -242,7 +326,7 @@ export default function AdminPage() {
       {events.length > 0 && (
         <div className="events-list">
           {events.map(ev => (
-            <EventCard key={ev.token} event={ev} />
+            <EventCard key={ev.token} event={ev} onRevoke={handleRevoke} onReopen={handleReopen} />
           ))}
         </div>
       )}

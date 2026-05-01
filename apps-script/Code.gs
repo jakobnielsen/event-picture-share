@@ -34,7 +34,12 @@ function saveEvents(events) {
 }
 
 function findEvent(token) {
-  return getEvents().find(function(ev) { return ev.token === token; }) || null;
+  return getEvents().find(function(ev) {
+    if (ev.token !== token) return false;
+    if (ev.revoked) return false;
+    if (ev.expiresAt && new Date(ev.expiresAt) < new Date()) return false;
+    return true;
+  }) || null;
 }
 
 function generateToken() {
@@ -104,6 +109,12 @@ function doPost(e) {
   if (action === 'listEvents') {
     return handleListEvents(body);
   }
+  if (action === 'revokeEvent') {
+    return handleRevokeEvent(body);
+  }
+  if (action === 'reopenEvent') {
+    return handleReopenEvent(body);
+  }
 
   return error('Unknown action');
 }
@@ -165,7 +176,7 @@ function handleCreateUploadSession(body) {
 }
 
 // ── Action: createEvent ───────────────────────────────────────
-// Body: { action, adminKey, name }
+// Body: { action, adminKey, name, expiryDays? }
 
 function handleCreateEvent(body) {
   if (!body.adminKey) return error('Missing adminKey');
@@ -174,6 +185,11 @@ function handleCreateEvent(body) {
   var name = (body.name || '').trim();
   if (!name) return error('Missing event name');
   if (name.length > 100) return error('Event name too long');
+
+  var expiryDays = parseInt(body.expiryDays, 10);
+  if (isNaN(expiryDays) || expiryDays < 1) expiryDays = 14;
+  if (expiryDays > 365) expiryDays = 365;
+  var expiresAt = new Date(Date.now() + expiryDays * 24 * 60 * 60 * 1000).toISOString();
 
   var parentId = props.getProperty('PARENT_FOLDER_ID');
   if (!parentId) return error('PARENT_FOLDER_ID not configured');
@@ -188,10 +204,12 @@ function handleCreateEvent(body) {
       name: name,
       folderId: subfolder.getId(),
       folderUrl: subfolder.getUrl(),
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
+      expiresAt: expiresAt,
+      revoked: false,
     });
     saveEvents(events);
-    return jsonResponse({ ok: true, token: token, folderId: subfolder.getId(), folderUrl: subfolder.getUrl() });
+    return jsonResponse({ ok: true, token: token, folderId: subfolder.getId(), folderUrl: subfolder.getUrl(), expiresAt: expiresAt });
   } catch (err) {
     Logger.log('createEvent error: ' + err.toString());
     return error('Failed to create event: ' + err.message);
@@ -211,9 +229,53 @@ function handleListEvents(body) {
       token: ev.token,
       folderId: ev.folderId,
       folderUrl: ev.folderUrl,
-      createdAt: ev.createdAt
+      createdAt: ev.createdAt,
+      expiresAt: ev.expiresAt || null,
+      revoked: ev.revoked || false,
     };
   });
 
   return jsonResponse({ ok: true, events: events });
+}
+
+// ── Action: revokeEvent ───────────────────────────────────────
+// Body: { action, adminKey, token }
+
+function handleRevokeEvent(body) {
+  if (!body.adminKey) return error('Missing adminKey');
+  if (!validateAdminKey(body.adminKey)) return error('Invalid adminKey');
+  if (!body.token) return error('Missing token');
+
+  var events = getEvents();
+  var ev = events.find(function(e) { return e.token === body.token; });
+  if (!ev) return error('Event not found');
+  ev.revoked = true;
+  saveEvents(events);
+  return jsonResponse({ ok: true });
+}
+
+// ── Action: reopenEvent ───────────────────────────────────────
+// Body: { action, adminKey, token, expiryDays? }
+// Clears revoked flag. If the event is expired, extends expiresAt.
+
+function handleReopenEvent(body) {
+  if (!body.adminKey) return error('Missing adminKey');
+  if (!validateAdminKey(body.adminKey)) return error('Invalid adminKey');
+  if (!body.token) return error('Missing token');
+
+  var expiryDays = parseInt(body.expiryDays, 10);
+  if (isNaN(expiryDays) || expiryDays < 1) expiryDays = 14;
+  if (expiryDays > 365) expiryDays = 365;
+
+  var events = getEvents();
+  var ev = events.find(function(e) { return e.token === body.token; });
+  if (!ev) return error('Event not found');
+
+  ev.revoked = false;
+  // Extend expiry if it is in the past (or missing)
+  if (!ev.expiresAt || new Date(ev.expiresAt) < new Date()) {
+    ev.expiresAt = new Date(Date.now() + expiryDays * 24 * 60 * 60 * 1000).toISOString();
+  }
+  saveEvents(events);
+  return jsonResponse({ ok: true, expiresAt: ev.expiresAt });
 }

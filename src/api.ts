@@ -30,6 +30,8 @@ export interface EventRecord {
   folderId: string
   folderUrl: string
   createdAt: string
+  expiresAt: string | null
+  revoked: boolean
 }
 
 export interface CreateEventResponse {
@@ -37,6 +39,7 @@ export interface CreateEventResponse {
   token: string
   folderId: string
   folderUrl: string
+  expiresAt: string
 }
 
 export interface ListEventsResponse {
@@ -116,8 +119,26 @@ export async function createUploadSession(
 export async function createEvent(
   adminKey: string,
   name: string,
+  expiryDays: number,
 ): Promise<ApiResponse<CreateEventResponse>> {
-  return postJson<CreateEventResponse>({ action: 'createEvent', adminKey, name })
+  return postJson<CreateEventResponse>({ action: 'createEvent', adminKey, name, expiryDays })
+}
+
+/** POST action:revokeEvent — marks an event as revoked so uploads are rejected */
+export async function revokeEvent(
+  adminKey: string,
+  token: string,
+): Promise<ApiResponse<{ ok: true }>> {
+  return postJson<{ ok: true }>({ action: 'revokeEvent', adminKey, token })
+}
+
+/** POST action:reopenEvent — clears revoked flag; extends expiresAt if expired */
+export async function reopenEvent(
+  adminKey: string,
+  token: string,
+  expiryDays = 14,
+): Promise<ApiResponse<{ ok: true; expiresAt: string }>> {
+  return postJson<{ ok: true; expiresAt: string }>({ action: 'reopenEvent', adminKey, token, expiryDays })
 }
 
 /** POST action:listEvents — returns all events for the admin dashboard */

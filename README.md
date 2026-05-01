@@ -35,10 +35,25 @@ A free-to-host progressive web app that lets event attendees upload photos and v
 - 🖼️ Upload photos and videos (any `image/*` or `video/*`)
 - ♾️ No file size limit — uses Drive resumable upload protocol
 - 🔄 Auto-retry with exponential backoff + manual retry per file
+- ⏳ Token expiry — set per event (default 14 days), with close and reopen controls
 - 🌙 Dark mode
 - 🌐 English + Danish UI
 - 📱 PWA — installable on home screen, works offline for the UI
 - 🔒 Per-event tokens + separate admin key — no user accounts needed
+
+---
+
+## Event lifecycle
+
+Each event has a token, an expiry date, and a revoked flag. Uploads are rejected as soon as any of these conditions are true.
+
+| State | Uploads accepted | Admin can |
+|---|---|---|
+| Active | ✅ Yes | Close event |
+| Closed (revoked) | ❌ No | Reopen |
+| Expired | ❌ No | Reopen (extends expiry by 14 days) |
+
+Event data is stored in Apps Script Script Properties as a JSON array (key: `EVENTS`). The practical limit is ~35 events before the 9 KB property size limit is reached.
 
 ---
 

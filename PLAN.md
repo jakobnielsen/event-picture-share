@@ -74,9 +74,11 @@ A single `doGet` + `doPost` dispatcher. All POST bodies are sent as `Content-Typ
 | Method | Action | Auth | Description |
 |---|---|---|---|
 | GET | `getEvent` | token | Returns event name for the upload page header |
-| POST | `createUploadSession` | token | Validates token, returns Drive OAuth token + folder ID + safe filename for browser to initiate a Drive resumable upload session directly |
-| POST | `createEvent` | adminKey | Creates Drive subfolder, generates token, persists event |
-| POST | `listEvents` | adminKey | Returns all events with folder URLs |
+| POST | `createUploadSession` | token | Validates token (checks expiry + revoked), returns Drive OAuth token + folder ID + safe filename for browser to initiate a Drive resumable upload session directly |
+| POST | `createEvent` | adminKey | Creates Drive subfolder, generates token, persists event with expiry date |
+| POST | `listEvents` | adminKey | Returns all events with status fields |
+| POST | `revokeEvent` | adminKey | Marks an event as closed — uploads immediately rejected |
+| POST | `reopenEvent` | adminKey | Clears revoked flag; extends `expiresAt` if expired |
 
 ### Upload flow
 
@@ -92,9 +94,11 @@ This approach is CORS-safe because the browser itself initiates the Drive sessio
 
 | Property | Value |
 |---|---|
-| `ADMIN_KEY` | Long random string. Guards `createEvent` and `listEvents`. |
+| `ADMIN_KEY` | Long random string. Guards `createEvent`, `listEvents`, `revokeEvent`, `reopenEvent`. |
 | `PARENT_FOLDER_ID` | Google Drive folder ID that will contain all event subfolders. |
-| `EVENTS` | JSON array auto-managed by the script. Starts as `[]`. |
+| `EVENTS` | JSON array auto-managed by the script. Starts as `[]`. Each entry: `{ token, name, folderId, folderUrl, createdAt, expiresAt, revoked }`. |
+
+**Storage limits**: Script Properties support ~9 KB per value. Each event is ~250 bytes, giving a practical ceiling of ~35 events. If you expect more, migrate `EVENTS` to a Google Sheet.
 
 ---
 
@@ -208,6 +212,9 @@ npm run build && npm run preview
 - ✅ Browser-initiated Drive resumable uploads (no size limit, real progress)
 - ✅ Auto-retry with exponential backoff + manual retry per file
 - ✅ Wake Lock keeps screen on during uploads
+- ✅ Token expiry — configurable per event (default 14 days, max 365)
+- ✅ Event revocation — organizer can close an event at any time
+- ✅ Event reopening — closed/expired events can be reopened with extended expiry
 - ✅ Dark mode (CSS custom properties, persisted to localStorage)
 - ✅ English + Danish i18n (auto-detected, persisted to localStorage)
 - ✅ Admin dashboard — create events, show/download QR codes, link to Drive folders
@@ -216,6 +223,5 @@ npm run build && npm run preview
 ## Out of scope (current version)
 
 - Gallery / viewing uploaded photos
-- Token expiry
 - User accounts beyond the admin key
 - Server-side rate limiting
