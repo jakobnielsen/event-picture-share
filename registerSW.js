@@ -1,0 +1,1 @@
+if('serviceWorker' in navigator) {window.addEventListener('load', () => {navigator.serviceWorker.register('/event-picture-share/sw.js', { scope: '/event-picture-share/' })})}

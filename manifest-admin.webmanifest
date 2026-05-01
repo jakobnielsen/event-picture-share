@@ -1,0 +1,24 @@
+{
+  "name": "Event Photo Share — Admin",
+  "short_name": "PhotoShare Admin",
+  "description": "Manage photo events and generate QR codes",
+  "theme_color": "#1a73e8",
+  "background_color": "#ffffff",
+  "display": "standalone",
+  "start_url": "/event-picture-share/admin",
+  "scope": "/event-picture-share/admin",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
