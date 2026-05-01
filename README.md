@@ -37,7 +37,8 @@ A free-to-host progressive web app that lets event attendees upload photos and v
 - 🖼️ Upload photos and videos (any `image/*` or `video/*`)
 - ♾️ No file size limit — uses Drive resumable upload protocol
 - 🔄 Auto-retry with exponential backoff + manual retry per file
-- ⏳ Token expiry — set per event (default 14 days), with close and reopen controls
+- ⏳ Token expiry — set per event (default 14 days), with close, reopen, and delete controls
+- 🚫 Duplicate prevention — re-uploading the same filename is detected and skipped
 - 🌙 Dark mode
 - 🌐 English + Danish UI
 - 📱 PWA — installable on home screen, works offline for the UI
@@ -51,9 +52,9 @@ Each event has a token, an expiry date, and a revoked flag. Uploads are rejected
 
 | State | Uploads accepted | Admin can |
 |---|---|---|
-| Active | ✅ Yes | Close event |
-| Closed (revoked) | ❌ No | Reopen |
-| Expired | ❌ No | Reopen (extends expiry by 14 days) |
+| Active | ✅ Yes | Close event, Delete |
+| Closed (revoked) | ❌ No | Reopen, Delete |
+| Expired | ❌ No | Reopen (extends expiry by 14 days), Delete |
 
 Event data is stored in Apps Script Script Properties as a JSON array (key: `EVENTS`). The practical limit is ~35 events before the 9 KB property size limit is reached.
 
@@ -105,3 +106,9 @@ See [PLAN.md](PLAN.md) for the full one-time bootstrap steps (Apps Script projec
 - The admin key is stored only in Apps Script Script Properties and the organizer's browser `localStorage`
 - POST requests use `Content-Type: text/plain` to avoid CORS preflight on Apps Script
 - All admin key comparisons use constant-time comparison to prevent timing attacks
+
+---
+
+## License
+
+MIT © 2026 Jakob Nielsen — see [LICENSE](LICENSE).

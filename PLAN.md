@@ -79,6 +79,7 @@ A single `doGet` + `doPost` dispatcher. All POST bodies are sent as `Content-Typ
 | POST | `listEvents` | adminKey | Returns all events with status fields |
 | POST | `revokeEvent` | adminKey | Marks an event as closed — uploads immediately rejected |
 | POST | `reopenEvent` | adminKey | Clears revoked flag; extends `expiresAt` if expired |
+| POST | `deleteEvent` | adminKey | Removes event record; optionally moves Drive folder to trash |
 
 ### Upload flow
 
@@ -94,7 +95,7 @@ This approach is CORS-safe because the browser itself initiates the Drive sessio
 
 | Property | Value |
 |---|---|
-| `ADMIN_KEY` | Long random string. Guards `createEvent`, `listEvents`, `revokeEvent`, `reopenEvent`. |
+| `ADMIN_KEY` | Long random string. Guards `createEvent`, `listEvents`, `revokeEvent`, `reopenEvent`, `deleteEvent`. |
 | `PARENT_FOLDER_ID` | Google Drive folder ID that will contain all event subfolders. |
 | `EVENTS` | JSON array auto-managed by the script. Starts as `[]`. Each entry: `{ token, name, folderId, folderUrl, createdAt, expiresAt, revoked }`. |
 
@@ -105,6 +106,7 @@ This approach is CORS-safe because the browser itself initiates the Drive sessio
 ## Upload behaviour
 
 - **No compression** — files are uploaded as-is to preserve quality. Google Drive accepts original photos and videos.
+- **Duplicate prevention** — before initiating a session, Apps Script checks if a file with the same name already exists in the folder. Duplicates are skipped and marked as already uploaded.
 - **Concurrency** — 3 parallel uploads (conservative for 4G mobile connections; safe on both iOS and Android).
 - **Resumable uploads** — each upload uses Drive's resumable upload protocol, so interrupted uploads can be resumed mid-file.
 - **Wake Lock** — the Screen Wake Lock API keeps the screen on during uploads so the browser stays active.
@@ -215,6 +217,8 @@ npm run build && npm run preview
 - ✅ Token expiry — configurable per event (default 14 days, max 365)
 - ✅ Event revocation — organizer can close an event at any time
 - ✅ Event reopening — closed/expired events can be reopened with extended expiry
+- ✅ Event deletion — removes event record with optional Drive folder trash
+- ✅ Duplicate upload prevention — same filename skipped if already in Drive folder
 - ✅ Dark mode (CSS custom properties, persisted to localStorage)
 - ✅ English + Danish i18n (auto-detected, persisted to localStorage)
 - ✅ Admin dashboard — create events, show/download QR codes, link to Drive folders
@@ -225,3 +229,9 @@ npm run build && npm run preview
 - Gallery / viewing uploaded photos
 - User accounts beyond the admin key
 - Server-side rate limiting
+
+---
+
+## License
+
+MIT © 2026 Jakob Nielsen — see [LICENSE](LICENSE).
