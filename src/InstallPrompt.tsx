@@ -60,9 +60,9 @@ export default function InstallPrompt({ ignoreStandalone = false }: { ignoreStan
     return () => document.removeEventListener('mousedown', handler)
   }, [showIosTooltip])
 
-  if (!deferredPrompt && !ios && !ignoreStandalone) return null
+  if (!deferredPrompt && !ios) return null
 
-  if (ios || (!deferredPrompt && ignoreStandalone)) {
+  if (ios) {
     return (
       <div className="install-wrap" ref={tooltipRef}>
         <button

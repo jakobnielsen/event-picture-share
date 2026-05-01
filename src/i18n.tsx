@@ -95,8 +95,7 @@ const en = {
 
   // Install prompt
   install_btn: 'Add to Home Screen',
-  install_ios_hint: 'Tap “Share” then “Add to Home Screen”',
-  install_dismiss: 'Dismiss',
+  install_ios_hint: 'Tap "Share" then "Add to Home Screen"',  install_dismiss: 'Dismiss',
 }
 
 const da: typeof en = {
@@ -181,8 +180,7 @@ const da: typeof en = {
 
   // Install prompt
   install_btn: 'Føj til startskærm',
-  install_ios_hint: 'Tryk på “Del” og derefter “Føj til startskærm”',
-  install_dismiss: 'Luk',}
+  install_ios_hint: 'Tryk på "Del" og derefter "Føj til startskærm"',  install_dismiss: 'Luk',}
 
 const translations: Record<Locale, typeof en> = { en, da }
 
