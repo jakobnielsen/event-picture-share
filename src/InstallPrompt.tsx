@@ -6,6 +6,10 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>
 }
 
+declare global {
+  interface Window { __deferredInstallPrompt?: BeforeInstallPromptEvent }
+}
+
 function isIos() {
   return /iphone|ipad|ipod/i.test(navigator.userAgent)
 }
@@ -27,6 +31,12 @@ export default function InstallPrompt({ ignoreStandalone = false }: { ignoreStan
 
     if (isIos()) {
       setIos(true)
+      return
+    }
+
+    // Pick up event captured before React mounted
+    if (window.__deferredInstallPrompt) {
+      setDeferredPrompt(window.__deferredInstallPrompt)
       return
     }
 
