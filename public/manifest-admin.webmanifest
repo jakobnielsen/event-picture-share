@@ -5,8 +5,8 @@
   "theme_color": "#1a73e8",
   "background_color": "#ffffff",
   "display": "standalone",
-  "start_url": "/event-picture-share/admin/",
-  "scope": "/event-picture-share/admin/",
+  "start_url": "/event-picture-share/admin",
+  "scope": "/event-picture-share/admin",
   "icons": [
     {
       "src": "icons/icon-192.png",
