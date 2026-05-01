@@ -309,9 +309,6 @@ export default function UploadPage({ token }: UploadPageProps) {
           <strong>{t.drop_label}</strong>
           <br />
           <span style={{ fontSize: 12, marginTop: 4, display: 'block' }}>{t.drop_hint}</span>
-          <span style={{ fontSize: 11, marginTop: 6, display: 'block', color: 'var(--text-muted)' }}>
-            {t.drop_info}
-          </span>
           <input
             ref={inputRef}
             type="file"

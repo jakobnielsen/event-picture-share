@@ -7,7 +7,7 @@ export type Locale = 'en' | 'da'
 const en = {
   // LandingPage
   landing_title: 'Event Photo Share',
-  landing_desc: "Scan the QR code at your event to upload photos directly to the organizer's Google Drive.",
+  landing_desc: "Scan the QR code at your event to upload photos and videos directly to the organizer.",
 
   // UploadPage — static UI
   upload_subtitle: 'Upload your photos and videos from the event',
@@ -15,7 +15,6 @@ const en = {
   drop_aria: 'Select photos or videos to upload',
   drop_label: 'Tap to select photos or videos',
   drop_hint: 'or drag & drop here',
-  drop_info: 'Photos and videos uploaded directly to Google Drive',
   input_aria: 'Select photos or videos',
   btn_uploading: 'Uploading…',
   btn_clear: 'Clear',
@@ -93,14 +92,13 @@ const en = {
 
 const da: typeof en = {
   landing_title: 'Event Billededeling',
-  landing_desc: 'Scan QR-koden ved dit arrangement for at uploade billeder direkte til arrangørens Google Drive.',
+  landing_desc: 'Scan QR-koden ved dit arrangement for at uploade billeder og videoer direkte til arrangøren.',
 
   upload_subtitle: 'Upload dine billeder og videoer fra arrangementet',
   upload_success: 'Alle filer er uploadet! Tak 🎉',
   drop_aria: 'Vælg billeder eller videoer til upload',
   drop_label: 'Tryk for at vælge billeder eller videoer',
   drop_hint: 'eller træk og slip her',
-  drop_info: 'Billeder og videoer uploades direkte til Google Drive',
   input_aria: 'Vælg billeder eller videoer',
   btn_uploading: 'Uploader…',
   btn_clear: 'Ryd',
