@@ -504,6 +504,27 @@ html, body {
   align-items: center;
 }
 
+/* ── Install prompt ─────────────────────────────────────────── */
+.install-wrap {
+  position: relative;
+}
+
+.install-tooltip {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 13px;
+  color: var(--text);
+  white-space: nowrap;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+  z-index: 300;
+}
+
+
 .theme-toggle {
   background: var(--bg-surface);
   border: 1px solid var(--border);

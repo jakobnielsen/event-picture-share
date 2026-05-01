@@ -15,6 +15,8 @@ A free-to-host progressive web app that lets event attendees upload photos and v
 3. Attendees scan the QR code (or use the in-app scanner on the landing page)
 4. They select photos/videos and upload — files land in a Drive subfolder instantly
 
+The **main app** (`/`) and the **admin app** (`/admin/`) are two separate installable PWAs. Attendees install the main app; the organizer installs the admin app.
+
 ---
 
 ## Stack
@@ -41,7 +43,7 @@ A free-to-host progressive web app that lets event attendees upload photos and v
 - 🚫 Duplicate prevention — re-uploading the same filename is detected and skipped
 - 🌙 Dark mode
 - 🌐 English + Danish UI
-- 📱 PWA — installable on home screen, works offline for the UI
+- 📱 PWA — two independently installable apps: main app for attendees, admin app for the organizer
 - 🔒 Per-event tokens + separate admin key — no user accounts needed
 
 ---

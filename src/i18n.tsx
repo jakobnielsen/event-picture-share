@@ -92,6 +92,11 @@ const en = {
   scan_no_permission: 'Camera permission denied',
   scan_error: 'Could not start camera',
   scan_close: 'Close',
+
+  // Install prompt
+  install_btn: 'Add to Home Screen',
+  install_ios_hint: 'Tap “Share” then “Add to Home Screen”',
+  install_dismiss: 'Dismiss',
 }
 
 const da: typeof en = {
@@ -172,7 +177,12 @@ const da: typeof en = {
   scan_no_camera: 'Kamera ikke tilgængeligt',
   scan_no_permission: 'Kameraadgang afvist',
   scan_error: 'Kunne ikke starte kamera',
-  scan_close: 'Luk',}
+  scan_close: 'Luk',
+
+  // Install prompt
+  install_btn: 'Føj til startskærm',
+  install_ios_hint: 'Tryk på “Del” og derefter “Føj til startskærm”',
+  install_dismiss: 'Luk',}
 
 const translations: Record<Locale, typeof en> = { en, da }
 
