@@ -113,7 +113,12 @@ export default function UploadPage({ token }: UploadPageProps) {
     getEvent(token)
       .then(data => {
         if (data.ok) setEventName(data.name)
-        else setLoadError(data.error ?? t.err_invalid_link)
+        else {
+          const msg = data.error === 'Event expired' ? t.err_event_expired
+            : data.error === 'Event closed' ? t.err_event_closed
+            : t.err_invalid_link
+          setLoadError(msg)
+        }
       })
       .catch(() => setLoadError(t.err_connection))
   }, [token, t])

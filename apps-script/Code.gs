@@ -77,8 +77,11 @@ function doGet(e) {
   if (action === 'getEvent') {
     var token = e.parameter.token;
     if (!token) return error('Missing token');
-    var ev = findEvent(token);
+    var events = getEvents();
+    var ev = events.find(function(e) { return e.token === token; });
     if (!ev) return error('Invalid token');
+    if (ev.revoked) return error('Event closed');
+    if (ev.expiresAt && new Date(ev.expiresAt) < new Date()) return error('Event expired');
     return jsonResponse({ ok: true, name: ev.name, createdAt: ev.createdAt });
   }
 
@@ -161,10 +164,11 @@ function handleCreateUploadSession(body) {
   if (!body.filename) return error('Missing filename');
   if (!body.mimeType) return error('Missing mimeType');
 
-  var ev = findEvent(body.token);
+  var events = getEvents();
+  var ev = events.find(function(e) { return e.token === body.token; });
   if (!ev) return error('Invalid token');
-
-  var safeName = body.filename.replace(/[^a-zA-Z0-9.\-_ ()]/g, '_');
+  if (ev.revoked) return error('Event closed');
+  if (ev.expiresAt && new Date(ev.expiresAt) < new Date()) return error('Event expired');.replace(/[^a-zA-Z0-9.\-_ ()]/g, '_');
   if (safeName.length === 0) safeName = 'file';
 
   // Deduplicate: if a file with this name already exists in the folder, skip the upload

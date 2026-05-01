@@ -35,6 +35,8 @@ const en = {
 
   // UploadPage — error messages
   err_invalid_link: 'Invalid link.',
+  err_event_expired: 'This event has ended and is no longer accepting uploads.',
+  err_event_closed: 'This event has been closed by the organizer.',
   err_connection: 'Could not reach the server. Check your connection.',
   err_qr_hint: 'Make sure you scanned the correct QR code.',
   err_network: 'Network error',
@@ -115,6 +117,8 @@ const da: typeof en = {
   large_file_warn: 'Stor fil — kvaliteten bevares så vidt muligt',
 
   err_invalid_link: 'Ugyldigt link.',
+  err_event_expired: 'Dette arrangement er afsluttet og modtager ikke længere uploads.',
+  err_event_closed: 'Dette arrangement er lukket af arrangøren.',
   err_connection: 'Kunne ikke nå serveren. Tjek din forbindelse.',
   err_qr_hint: 'Sørg for at du scannede den rigtige QR-kode.',
   err_network: 'Netværksfejl',
